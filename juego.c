@@ -185,6 +185,7 @@ void mensaje_nuevo_nivel( int nivel ){
 
 nivel_t nuevo_nivel( int nivel ){
 
+    int dimension; // mapa de dim x dim
     nivel_t nuevo_nivel;
 
     nuevo_nivel.tope_camino_1 = 0;
@@ -197,17 +198,19 @@ nivel_t nuevo_nivel( int nivel ){
 
     if( nivel == 1 ){
 
-        nuevo_nivel.tope_enemigos = 10;//100
+        dimension = 15 ;
+
+        nuevo_nivel.tope_enemigos = 100;
         nuevo_nivel.tope_defensores = 5;
         nuevo_nivel.tope_camino_2 = 0;
 
         coordenada_t entrada,torre;
 
-        entrada.fil = 7;
-        entrada.col = 0;
+        entrada.fil = rand()%dimension;
+        entrada.col = dimension-1;
 
-        torre.fil = 7;
-        torre.col = 15;
+        torre.fil = rand()%dimension;
+        torre.col = 0;
 
         obtener_camino(
             nuevo_nivel.camino_1,

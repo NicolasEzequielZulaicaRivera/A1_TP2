@@ -7,6 +7,8 @@ static const char ANIMO_MALO    = 'M';
 
 static const char VACIO  = ' ';
 static const char CAMINO = '_';
+static const char TORRE   = 'T';
+static const char ENTRADA = 'S';
 
 static const char ORCO  = 'O';
 //static const int RES_ORCO  = 200;
@@ -148,7 +150,7 @@ int agregar_defensor(nivel_t* nivel, coordenada_t posicion, char tipo){
 
 void jugar_turno(juego_t* juego){
 
-	juego->nivel.tope_enemigos --;
+	juego->nivel.tope_enemigos /= 2;
 
 }
 
@@ -235,19 +237,24 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
  * cambiando los caracteres que tengan un sprite asignado
  * por dicho sprite
  */
-void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] );
+void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] , int dimension);
+
+
+//Recibe un nivel valido y devuelve la dimension de su mapa 
+int dimension(nivel_t nivel);
 
 void mostrar_juego(juego_t juego){
 
 	system("clear");
 
-	mostrar_datos( juego);
+	mostrar_datos( juego );
 
 	char mapa[MAX_FILAS][MAX_COLUMNAS];
+	int dim = dimension( juego.nivel );
 
 	cargar_mapa( mapa, juego.nivel );
 
-	mostrar_mapa(mapa);
+	mostrar_mapa(mapa, dim);
 }
 
 void mostrar_datos(juego_t juego){
@@ -258,7 +265,7 @@ void mostrar_datos(juego_t juego){
 	printf("\n");
 }
 
-void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
+void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], int dimension ){
 	
 	sprite_map_t sprite_map;
 	iniciar_sprites( &sprite_map );
@@ -272,19 +279,19 @@ void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
 	espacio_blanco[i]='\0';
 
 	printf("\n    ");
-	for(j=0 ; j < MAX_COLUMNAS; j++){
+	for(j=0 ; j < dimension; j++){
 		printf("%s", espacio_blanco);
 		if( j < 10 )
 			printf("0");
 		printf("%i|", j);
 	}
-	for (i = 0; i < MAX_FILAS; i++)
+	for (i = 0; i < dimension; i++)
 	{
 		printf("\n");
 		if( i < 10 )
 			printf("0");
 		printf("%i| ",i);
-		for( j = 0; j < MAX_COLUMNAS; j++ ){
+		for( j = 0; j < dimension; j++ ){
 			buscar_sprite( sprite_map ,mapa[i][j], &sprite);
 			printf("%s ",sprite);
 		}
@@ -313,8 +320,12 @@ void iniciar_sprites( sprite_map_t* sprite_map ){
 	strcpy(sprite_map->sprites[ sprite_map->tope ], "tP");
 	(sprite_map->tope)++;
 
-	sprite_map->indice [ sprite_map->tope ] = 'T';
+	sprite_map->indice [ sprite_map->tope ] = TORRE;
 	strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
+	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = ENTRADA;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "{}");
 	(sprite_map->tope)++;
 
 	sprite_map->indice [ sprite_map->tope ] = CAMINO;
@@ -344,6 +355,12 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 
 	for ( k = 0; k < nivel.tope_camino_1 ; k++)
 		mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO;
+	if(k > 0){
+		mapa[ nivel.camino_1[0].fil ][ nivel.camino_1[0].col ] = ENTRADA;
+		mapa[ nivel.camino_1[k-1].fil ][ nivel.camino_1[k-1].col ] = TORRE;		
+	}
+
+
 
 	for ( k = 0; k < nivel.tope_camino_2 ; k++)
 		mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO;
@@ -353,3 +370,39 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 			mapa[k%10][k%20] = ORCO; //obvio que no
 	}
 };
+
+int dimension(nivel_t nivel){
+
+	int dimension = 0;
+	int i;
+
+	if( nivel.tope_camino_1 > 2 ){
+
+		int aux[4] = {
+			nivel.camino_1[0].fil,
+			nivel.camino_1[0].col,
+			nivel.camino_1[ nivel.tope_camino_1 -1 ].fil,
+			nivel.camino_1[ nivel.tope_camino_1 -1 ].col
+		};
+
+		for (i = 0; i < 4; i++)
+			dimension = ( aux[i]>dimension )? aux[i] : dimension;
+
+	}
+
+	if( nivel.tope_camino_2 > 2 ){
+
+		int aux[4] = {
+			nivel.camino_2[0].fil,
+			nivel.camino_2[0].col,
+			nivel.camino_2[ nivel.tope_camino_2 -1 ].fil,
+			nivel.camino_2[ nivel.tope_camino_2 -1 ].col
+		};
+
+		for (i = 0; i < 4; i++)
+			dimension = ( aux[i]>dimension )? aux[i] : dimension;
+
+	}
+
+	return dimension+1;
+}
