@@ -6,6 +6,7 @@ static const char ANIMO_REGULAR = 'R';
 static const char ANIMO_MALO    = 'M';
 
 static const char VACIO  = ' ';
+static const char CAMINO = '_';
 
 static const char ORCO  = 'O';
 //static const int RES_ORCO  = 200;
@@ -225,9 +226,9 @@ void mostrar_datos(juego_t juego);
 
 /*
  * Carga un mapa de caracteres segun el juego
- * pre: reccibe un juego valido, en un nivel valido
+ * pre: reccibe un nivel valido
  */
-void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], juego_t juego);
+void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
 
 /*
  * Muestra con formato un arreglo,
@@ -244,7 +245,7 @@ void mostrar_juego(juego_t juego){
 
 	char mapa[MAX_FILAS][MAX_COLUMNAS];
 
-	cargar_mapa( mapa, juego );
+	cargar_mapa( mapa, juego.nivel );
 
 	mostrar_mapa(mapa);
 }
@@ -291,6 +292,7 @@ void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
 	printf("\n\n");
 }
 
+// --------------------  ACA  --------------------
 void iniciar_sprites( sprite_map_t* sprite_map ){
 
 	sprite_map->tope = 0;
@@ -314,6 +316,10 @@ void iniciar_sprites( sprite_map_t* sprite_map ){
 	sprite_map->indice [ sprite_map->tope ] = 'T';
 	strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
 	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = CAMINO;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "##");
+	(sprite_map->tope)++;
 }
 
 void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
@@ -329,18 +335,21 @@ void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
 		}
 }
 
-void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], juego_t juego){
+void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 
-	int i, j;
+	int i, j, k;
 	for (i = 0; i < MAX_FILAS; i++)
 		for( j = 0; j < MAX_COLUMNAS; j++ )
 			mapa[i][j] = VACIO;
 
-	//  PRUEBAS
-	for( j = 0; j < MAX_COLUMNAS; j++ )
-			mapa[3][j] = ORCO;
-	for( j = 0; j < MAX_COLUMNAS; j++ )
-			mapa[j][j] = ELFO;
-	for( j = 0; j < MAX_COLUMNAS; j++ )
-			mapa[j][MAX_COLUMNAS-1-j] = ENANO;
+	for ( k = 0; k < nivel.tope_camino_1 ; k++)
+		mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO;
+
+	for ( k = 0; k < nivel.tope_camino_2 ; k++)
+		mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO;
+
+	for ( k = 0; k < nivel.tope_enemigos ; k++){
+		if(nivel.enemigos[k].vida > 0)
+			mapa[k][k] = ORCO; //obvio que no
+	}
 };
