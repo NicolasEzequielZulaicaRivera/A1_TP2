@@ -48,21 +48,7 @@ nivel_t nuevo_nivel( int nivel );
 void mensaje_nuevo_nivel( int nivel );
 
 
-void borrame(){
-
-    system("clear");
-
-    for(int i= 33; i<130; i++)
-        printf("\n%i - %c",i,i );
-
-    char c;
-    scanf("%c",&c);
-
-}
-
 int main(){
-
-    //borrame();
 
     int viento = 0;
     int humedad = 0;
