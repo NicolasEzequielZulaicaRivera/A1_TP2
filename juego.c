@@ -197,9 +197,23 @@ nivel_t nuevo_nivel( int nivel ){
 
     if( nivel == 1 ){
 
-        nuevo_nivel.tope_enemigos = 100;
+        nuevo_nivel.tope_enemigos = 10;//100
         nuevo_nivel.tope_defensores = 5;
         nuevo_nivel.tope_camino_2 = 0;
+
+        coordenada_t entrada,torre;
+
+        entrada.fil = 7;
+        entrada.col = 0;
+
+        torre.fil = 7;
+        torre.col = 15;
+
+        obtener_camino(
+            nuevo_nivel.camino_1,
+            &nuevo_nivel.tope_camino_1, 
+            entrada, torre
+        );
 
     }
     for(int i = 0; i<nuevo_nivel.tope_enemigos; i++)
