@@ -202,7 +202,7 @@ defensor_t nuevo_defensor( char tipo, coordenada_t posicion ){
 #define SPRITE_SIZE 2 // >= 2
 #define MAX_SPRITES 10
 
-typedef char sprite_t[SPRITE_SIZE];
+typedef char sprite_t[SPRITE_SIZE+1];
 
 typedef struct sprite_map{
 	sprite_t sprites[MAX_SPRITES];
@@ -262,9 +262,17 @@ void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
 	sprite_map_t sprite_map;
 	iniciar_sprites( &sprite_map );
 
+	sprite_t sprite;
+
+	char espacio_blanco[SPRITE_SIZE];
 	int i,j;
+	for(i = 0; i < SPRITE_SIZE-2;i++)
+		espacio_blanco[i]=' ';
+	espacio_blanco[i]='\0';
+
 	printf("\n    ");
 	for(j=0 ; j < MAX_COLUMNAS; j++){
+		printf("%s", espacio_blanco);
 		if( j < 10 )
 			printf("0");
 		printf("%i|", j);
@@ -276,7 +284,8 @@ void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
 			printf("0");
 		printf("%i| ",i);
 		for( j = 0; j < MAX_COLUMNAS; j++ ){
-			printf("%c%c ",mapa[i][j],mapa[i][j]);
+			buscar_sprite( sprite_map ,mapa[i][j], &sprite);
+			printf("%s ",sprite);
 		}
 	}
 	printf("\n\n");
@@ -286,13 +295,12 @@ void iniciar_sprites( sprite_map_t* sprite_map ){
 
 	sprite_map->tope = 0;
 
-
 	sprite_map->indice [ sprite_map->tope ] = VACIO;
 	strcpy(sprite_map->sprites[ sprite_map->tope ], "  ");
 	(sprite_map->tope)++;
 
 	sprite_map->indice [ sprite_map->tope ] = ORCO;
-	strcpy(sprite_map->sprites[ sprite_map->tope ], "@^");
+	strcpy(sprite_map->sprites[ sprite_map->tope ], ":(");
 	(sprite_map->tope)++;
 
 	sprite_map->indice [ sprite_map->tope ] = ELFO;
@@ -306,8 +314,6 @@ void iniciar_sprites( sprite_map_t* sprite_map ){
 	sprite_map->indice [ sprite_map->tope ] = 'T';
 	strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
 	(sprite_map->tope)++;
-
-
 }
 
 void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
@@ -319,7 +325,7 @@ void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
 	for(i = 0; i < sprite_map.tope; i++ )
 		if( indice == sprite_map.indice[i] ){
 			strcpy( (*sprite), sprite_map.sprites[i] );
-			//return // -> el primero				
+			//return; // -> el primero				
 		}
 }
 
