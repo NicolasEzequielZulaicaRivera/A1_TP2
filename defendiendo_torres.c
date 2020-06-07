@@ -350,6 +350,6 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 
 	for ( k = 0; k < nivel.tope_enemigos ; k++){
 		if(nivel.enemigos[k].vida > 0)
-			mapa[k][k] = ORCO; //obvio que no
+			mapa[k%10][k%20] = ORCO; //obvio que no
 	}
 };

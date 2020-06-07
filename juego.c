@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "animos.h"
 #include "defendiendo_torres.h"
 #include "utiles.h"
@@ -15,6 +16,9 @@ static const int ESTADO_GANADO  = 1;
 #define OPCION_SALIR                4
 
 static const int CANTIDAD_NIVELES = 4;
+
+static const int RES_ORCO  = 200;
+static const int RES_ORCO_RAND  = 100;
 
 /*
  * Muestra un menu y actualiza la opcion elegida :
@@ -49,6 +53,10 @@ void mensaje_nuevo_nivel( int nivel );
 
 
 int main(){
+
+
+    //srand(time(NULL)); 
+    srand(5); 
 
     int viento = 0;
     int humedad = 0;
@@ -159,26 +167,6 @@ void mostrar_opciones( juego_t* juego ){
         return;
 }
 
-nivel_t nuevo_nivel( int nivel ){
-
-    nivel_t nuevo_nivel;
-
-    nuevo_nivel.tope_camino_1 = 0;
-    nuevo_nivel.tope_camino_2 = 0;
-    nuevo_nivel.tope_defensores = 0;
-    nuevo_nivel.tope_enemigos = 0;
-
-    if( nivel == 0 || nivel <= CANTIDAD_NIVELES ){
-
-        nuevo_nivel.tope_enemigos = 10;
-        for(int i = 0; i<nuevo_nivel.tope_enemigos; i++)
-                nuevo_nivel.enemigos[i].vida=100;
-
-    }
-
-    return nuevo_nivel;
-}
-
 void mensaje_nuevo_nivel( int nivel ){
 
     system("tput clear");
@@ -193,4 +181,29 @@ void mensaje_nuevo_nivel( int nivel ){
 
     char c;
     scanf("%c",&c);
+}
+
+nivel_t nuevo_nivel( int nivel ){
+
+    nivel_t nuevo_nivel;
+
+    nuevo_nivel.tope_camino_1 = 0;
+    nuevo_nivel.tope_camino_2 = 0;
+    nuevo_nivel.tope_defensores = 0;
+    nuevo_nivel.tope_enemigos = 0;
+
+    if( nivel <= CANTIDAD_NIVELES )
+        nuevo_nivel.tope_enemigos = 10;
+
+    if( nivel == 1 ){
+
+        nuevo_nivel.tope_enemigos = 100;
+        nuevo_nivel.tope_defensores = 5;
+        nuevo_nivel.tope_camino_2 = 0;
+
+    }
+    for(int i = 0; i<nuevo_nivel.tope_enemigos; i++)
+        nuevo_nivel.enemigos[i].vida= RES_ORCO + rand() %(RES_ORCO_RAND+1) ;
+
+    return nuevo_nivel;
 }
