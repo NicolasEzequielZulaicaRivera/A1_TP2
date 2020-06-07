@@ -5,7 +5,9 @@ static const char ANIMO_BUENO   = 'B';
 static const char ANIMO_REGULAR = 'R';
 static const char ANIMO_MALO    = 'M';
 
-//static const char ORCO  = 'O';
+static const char VACIO  = ' ';
+
+static const char ORCO  = 'O';
 //static const int RES_ORCO  = 200;
 //static const int RES_ORCO_RAND  = 100;
 
@@ -195,7 +197,9 @@ defensor_t nuevo_defensor( char tipo, coordenada_t posicion ){
 
 //----- MOTOR GRAFICO ----- (?)
 
-#define SPRITE_SIZE 2
+#include <string.h>
+
+#define SPRITE_SIZE 2 // >= 2
 #define MAX_SPRITES 10
 
 typedef char sprite_t[SPRITE_SIZE];
@@ -206,11 +210,27 @@ typedef struct sprite_map{
 	int tope;
 }sprite_map_t;
 
+// carga los sprites del mapa de sprites
+void iniciar_sprites( sprite_map_t* sprite_map );
+
+/*
+ * Busca el sprite que corresponde a un indice determinado
+ * > devuelve el ultimo sprite que se corresponda si hay
+ * > devuelve un sprite vacio si no hay
+ */
+void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite);
+
 // muestra datos relevantes el juego y nivel
 void mostrar_datos(juego_t juego);
 
 /*
- * muestra con formato un arreglo,
+ * Carga un mapa de caracteres segun el juego
+ * pre: reccibe un juego valido, en un nivel valido
+ */
+void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], juego_t juego);
+
+/*
+ * Muestra con formato un arreglo,
  * cambiando los caracteres que tengan un sprite asignado
  * por dicho sprite
  */
@@ -222,15 +242,11 @@ void mostrar_juego(juego_t juego){
 
 	mostrar_datos( juego);
 
-	int i, j;
 	char mapa[MAX_FILAS][MAX_COLUMNAS];
 
-	for (i = 0; i < MAX_FILAS; i++)
-		for( j = 0; j < MAX_COLUMNAS; j++ )
-			mapa[i][j] = '#';
+	cargar_mapa( mapa, juego );
 
 	mostrar_mapa(mapa);
-
 }
 
 void mostrar_datos(juego_t juego){
@@ -242,6 +258,10 @@ void mostrar_datos(juego_t juego){
 }
 
 void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
+	
+	sprite_map_t sprite_map;
+	iniciar_sprites( &sprite_map );
+
 	int i,j;
 	printf("\n    ");
 	for(j=0 ; j < MAX_COLUMNAS; j++){
@@ -256,8 +276,65 @@ void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS] ){
 			printf("0");
 		printf("%i| ",i);
 		for( j = 0; j < MAX_COLUMNAS; j++ ){
-			printf("%c%c ",mapa[i][j],'_');
+			printf("%c%c ",mapa[i][j],mapa[i][j]);
 		}
 	}
 	printf("\n\n");
 }
+
+void iniciar_sprites( sprite_map_t* sprite_map ){
+
+	sprite_map->tope = 0;
+
+
+	sprite_map->indice [ sprite_map->tope ] = VACIO;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "  ");
+	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = ORCO;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "@^");
+	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = ELFO;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "tD");
+	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = ENANO;
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "tP");
+	(sprite_map->tope)++;
+
+	sprite_map->indice [ sprite_map->tope ] = 'T';
+	strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
+	(sprite_map->tope)++;
+
+
+}
+
+void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
+
+	int i;
+	for (i = 0; i < SPRITE_SIZE; i++)
+		(*sprite)[i] = VACIO;
+
+	for(i = 0; i < sprite_map.tope; i++ )
+		if( indice == sprite_map.indice[i] ){
+			strcpy( (*sprite), sprite_map.sprites[i] );
+			//return // -> el primero				
+		}
+}
+
+void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], juego_t juego){
+
+	int i, j;
+	for (i = 0; i < MAX_FILAS; i++)
+		for( j = 0; j < MAX_COLUMNAS; j++ )
+			mapa[i][j] = VACIO;
+
+	//  PRUEBAS
+	for( j = 0; j < MAX_COLUMNAS; j++ )
+			mapa[3][j] = ORCO;
+	for( j = 0; j < MAX_COLUMNAS; j++ )
+			mapa[j][j] = ELFO;
+	for( j = 0; j < MAX_COLUMNAS; j++ )
+			mapa[j][MAX_COLUMNAS-1-j] = ENANO;
+};
