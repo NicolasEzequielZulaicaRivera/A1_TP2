@@ -5,6 +5,8 @@
 #include "defendiendo_torres.h"
 #include "utiles.h"
 
+static const float INTERVALO = 0.4f;
+
 static const int ESTADO_JUGANDO = 0;
 static const int ESTADO_GANADO  = 1;
 //static const int ESTADO_PERDIDO =-1;
@@ -74,6 +76,7 @@ int main(){
         switch( opcion ){
 
             case OPCION_NUEVO_JUEGO:
+                inicializar_juego(&juego, viento, humedad, animo_legolas, animo_gimli);
                 nuevo_juego( &juego );
             break;
 
@@ -134,7 +137,7 @@ void nuevo_juego( juego_t* juego ){
 
             mostrar_juego( *juego );
             
-            detener_el_tiempo(1);
+            detener_el_tiempo( INTERVALO );
 
         }
 
@@ -314,8 +317,11 @@ nivel_t nuevo_nivel( int nivel ){
 
 
 
-    for(int i = 0; i<nuevo_nivel.tope_enemigos; i++)
+    for(int i = 0; i<nuevo_nivel.tope_enemigos; i++){
         nuevo_nivel.enemigos[i].vida= RES_ORCO + rand() %(RES_ORCO_RAND+1) ;
+        nuevo_nivel.enemigos[i].camino = 0;
+        nuevo_nivel.enemigos[i].pos_en_camino = -1;
+    }
 
     return nuevo_nivel;
 }

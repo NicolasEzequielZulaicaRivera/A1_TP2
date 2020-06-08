@@ -8,7 +8,7 @@ static const char ANIMO_MALO    = 'M';
 static const char VACIO  = ' ';
 static const char CAMINO = '_';
 static const char TORRE   = 'T';
-static const char ENTRADA = 'S';
+static const char ENTRADA = 'E';
 
 static const char ORCO  = 'O';
 //static const int RES_ORCO  = 200;
@@ -150,7 +150,66 @@ int agregar_defensor(nivel_t* nivel, coordenada_t posicion, char tipo){
 
 void jugar_turno(juego_t* juego){
 
-	juego->nivel.tope_enemigos /= 2;
+	int i;
+	// ENANOS
+
+	// ELFOS
+
+	// ORCOS
+	bool mover_1, mover_2;
+
+	mover_1 = ( juego->nivel.tope_camino_1 > 2 );
+	mover_2 = ( juego->nivel.tope_camino_2 > 2 );
+
+	for(i = 0; i < juego->nivel.tope_enemigos; i++){
+
+		if( juego->nivel.enemigos[i].vida > 0 ){
+
+			if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
+				(juego->nivel.enemigos[i].pos_en_camino)++;
+
+				// NOOOOO
+				juego->nivel.enemigos[i].vida -= 
+					rand() % 
+					(800 /
+						( 
+							(juego->nivel.tope_camino_1 > juego->nivel.tope_camino_2)?
+							(juego->nivel.tope_camino_1) : (juego->nivel.tope_camino_2)
+						) 
+					) 
+					* (i%3+1);
+				// NOOOOO */
+
+				if( (juego->nivel.enemigos[i].camino == 1) && 
+					(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
+						juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
+				}else if( (juego->nivel.enemigos[i].camino == 2) && 
+					(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
+						juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
+				}
+			}
+			else if( mover_1 ){
+				juego->nivel.enemigos[i].pos_en_camino = 1;
+				juego->nivel.enemigos[i].camino = 1;
+				mover_1 = false;
+			}
+			else if( mover_2 ){
+				juego->nivel.enemigos[i].pos_en_camino = 1;
+				juego->nivel.enemigos[i].camino = 2;
+				mover_2 = false;
+			}
+
+		}
+
+	}
+
+	// FIN
+	if( juego->torres.resistencia_torre_1 < 0 )
+		juego->torres.resistencia_torre_1 = 0;
+	if( juego->torres.resistencia_torre_2 < 0 )
+		juego->torres.resistencia_torre_2 = 0;
 
 }
 
@@ -349,18 +408,20 @@ void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
 void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 
 	int i, j, k;
+	//int dim = dimension(nivel);
+	// coordenada_t pos; // asignacion defectuosa ? <- 2020/6/7 22:20 - No recibia fil y col correctas => se uso i,j
 	for (i = 0; i < MAX_FILAS; i++)
 		for( j = 0; j < MAX_COLUMNAS; j++ )
 			mapa[i][j] = VACIO;
 
-// TORRE 1
+	// CAMINO 1
 	for ( k = 0; k < nivel.tope_camino_1 ; k++)
 		mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO;
 	if(k > 0){
 		mapa[ nivel.camino_1[0].fil ][ nivel.camino_1[0].col ] = ENTRADA;
 		mapa[ nivel.camino_1[k-1].fil ][ nivel.camino_1[k-1].col ] = TORRE;		
 	}
-// TORRE 2
+	// CAMINO 2
 	for ( k = 0; k < nivel.tope_camino_2 ; k++)
 		mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO;
 	if(k > 0){
@@ -368,10 +429,28 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 		mapa[ nivel.camino_2[k-1].fil ][ nivel.camino_2[k-1].col ] = TORRE;		
 	}
 
+	// ENMIGOS
 	for ( k = 0; k < nivel.tope_enemigos ; k++){
-		if(nivel.enemigos[k].vida > 0)
-			mapa[k%10][k%20] = ORCO; //obvio que no
+
+		if( nivel.enemigos[k].pos_en_camino > 0 ){
+			if(nivel.enemigos[k].vida > 0){
+
+				if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
+					i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
+					j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
+					mapa[ i ][ j ] = ORCO;
+				}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
+					i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
+					j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
+					mapa[ i ][ j ] = ORCO;
+				}
+	
+			}else{
+				//MOSTRAR CADAVER. ah re morboso
+			}
+		}
 	}
+
 };
 
 int dimension(nivel_t nivel){
