@@ -353,17 +353,20 @@ void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 		for( j = 0; j < MAX_COLUMNAS; j++ )
 			mapa[i][j] = VACIO;
 
+// TORRE 1
 	for ( k = 0; k < nivel.tope_camino_1 ; k++)
 		mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO;
 	if(k > 0){
 		mapa[ nivel.camino_1[0].fil ][ nivel.camino_1[0].col ] = ENTRADA;
 		mapa[ nivel.camino_1[k-1].fil ][ nivel.camino_1[k-1].col ] = TORRE;		
 	}
-
-
-
+// TORRE 2
 	for ( k = 0; k < nivel.tope_camino_2 ; k++)
 		mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO;
+	if(k > 0){
+		mapa[ nivel.camino_2[0].fil ][ nivel.camino_2[0].col ] = ENTRADA;
+		mapa[ nivel.camino_2[k-1].fil ][ nivel.camino_2[k-1].col ] = TORRE;		
+	}
 
 	for ( k = 0; k < nivel.tope_enemigos ; k++){
 		if(nivel.enemigos[k].vida > 0)

@@ -201,7 +201,6 @@ nivel_t nuevo_nivel( int nivel ){
         dimension = 15 ;
 
         nuevo_nivel.tope_enemigos = 100;
-        nuevo_nivel.tope_defensores = 5;
         nuevo_nivel.tope_camino_2 = 0;
 
         coordenada_t entrada,torre;
@@ -219,6 +218,102 @@ nivel_t nuevo_nivel( int nivel ){
         );
 
     }
+
+    if( nivel == 2 ){
+
+        dimension = 15 ;
+
+        nuevo_nivel.tope_enemigos = 200;
+        nuevo_nivel.tope_camino_1 = 0;
+
+        coordenada_t entrada,torre;
+
+        entrada.fil = rand()%dimension;
+        entrada.col = 0;
+
+        torre.fil = rand()%dimension;
+        torre.col = dimension-1;
+
+        obtener_camino(
+            nuevo_nivel.camino_2,
+            &nuevo_nivel.tope_camino_2, 
+            entrada, torre
+        );
+
+    }
+
+    if( nivel == 3 ){
+
+        dimension = 20;
+        nuevo_nivel.tope_enemigos = 300;
+
+        coordenada_t entrada,torre;
+
+        // TORRE 1
+        entrada.fil = 0;
+        entrada.col = rand()%(dimension/2);
+
+        torre.fil = dimension-1;
+        torre.col = rand()%(dimension/2);
+
+        obtener_camino(
+            nuevo_nivel.camino_1,
+            &nuevo_nivel.tope_camino_1, 
+            entrada, torre
+        );
+
+        // TORRE 2
+        entrada.fil = 0;
+        entrada.col = rand()%(dimension/2)+(dimension/2);
+
+        torre.fil = dimension-1;
+        torre.col = rand()%(dimension/2)+(dimension/2);
+
+        obtener_camino(
+            nuevo_nivel.camino_2,
+            &nuevo_nivel.tope_camino_2, 
+            entrada, torre
+        );
+
+    }
+
+    if( nivel == 4 ){
+
+        dimension = 20;
+        nuevo_nivel.tope_enemigos = 500;
+
+        coordenada_t entrada,torre;
+
+        // TORRE 1
+        entrada.fil = dimension-1;
+        entrada.col = rand()%(dimension/2);
+
+        torre.fil = 0;
+        torre.col = rand()%(dimension/2);
+
+        obtener_camino(
+            nuevo_nivel.camino_1,
+            &nuevo_nivel.tope_camino_1, 
+            entrada, torre
+        );
+
+        // TORRE 2
+        entrada.fil = dimension-1;
+        entrada.col = rand()%(dimension/2)+(dimension/2);
+
+        torre.fil = 0;
+        torre.col = rand()%(dimension/2)+(dimension/2);
+
+        obtener_camino(
+            nuevo_nivel.camino_2,
+            &nuevo_nivel.tope_camino_2, 
+            entrada, torre
+        );
+
+    }
+
+
+
     for(int i = 0; i<nuevo_nivel.tope_enemigos; i++)
         nuevo_nivel.enemigos[i].vida= RES_ORCO + rand() %(RES_ORCO_RAND+1) ;
 
