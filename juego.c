@@ -29,7 +29,7 @@
     #define ENTRADA_NORTE 'N'
     #define ENTRADA_SUR   'S'
 
-    const config_nivel_t nivel_1 ={ 
+    const config_nivel_t NIVEL_1 ={ 
         .num = 1,
         .dimension = 15,
         .entrada = ENTRADA_ESTE,
@@ -39,7 +39,7 @@
         .turnos_bonus = 25
     };
 
-    const config_nivel_t nivel_2 ={ 
+    const config_nivel_t NIVEL_2 ={ 
         .num = 2,
         .dimension = 15,
         .entrada = ENTRADA_OESTE,
@@ -49,7 +49,7 @@
         .turnos_bonus = 50
     };
 
-    const config_nivel_t nivel_3 ={ 
+    const config_nivel_t NIVEL_3 ={ 
         .num = 3,
         .dimension = 20,
         .entrada = ENTRADA_NORTE,
@@ -59,16 +59,19 @@
         .turnos_bonus = 50
     };
 
-    const config_nivel_t nivel_4 ={ 
+    const config_nivel_t NIVEL_4 ={ 
         .num = 4,
         .dimension = 20,
         .entrada = ENTRADA_SUR,
-        .torre_1 = true, .torre_2 = false,
-        .enanos = 5, .elfos = 0, 
-        .orcos = 100,
+        .torre_1 = true, .torre_2 = true,
+        .enanos = 4, .elfos = 4, 
+        .orcos = 250,
         .turnos_bonus = 25
     };
 
+    const int MAX_INTENTOS = 20;
+    const int COMPLEJIDAD_NIVELES = 2;
+    const int RAREZA_CRUZADO = 2;
 //  CONSTANTES DE JUEGO (¡)
 
 // HEADER DE MENU Y CONFIG (!)
@@ -79,6 +82,7 @@
     #define OPCION_INICIALIZAR_ANIMOS   2
     #define OPCION_MOSTRAR_OPCIONES     3
     #define OPCION_SALIR                4
+    #define OPCION_TESTEO               9
 
     /*
      * Muestra un menu y actualiza la opcion elegida :
@@ -95,8 +99,11 @@
         float velocidad;
         int bonus_resistencia;
     } config_t;
-    static const float VELOCIDAD_STD = 0.4f;
-    static const int BONUS_RES_STD = 0;
+
+    const config_t CONFIG_STD ={
+        .velocidad = 0.4f,
+        .bonus_resistencia = 0
+    };
 
     // Inicializa la config son los valores std
     void iniciar_config( config_t* config );   
@@ -149,6 +156,11 @@ int main(){
 
         switch( opcion ){
 
+            case OPCION_TESTEO:
+                opcion = OPCION_NUEVO_JUEGO;
+                config.velocidad = 0.1f;
+                config.bonus_resistencia = 1000;
+
             case OPCION_NUEVO_JUEGO:
                 inicializar_juego(&juego, viento, humedad, animo_legolas, animo_gimli);
                 nuevo_juego( &juego , config );
@@ -189,41 +201,6 @@ int main(){
         *opcion = input[0]-48;
     }
 
-    void iniciar_config( config_t* config ){
-        config->velocidad = VELOCIDAD_STD;
-        config->bonus_resistencia = BONUS_RES_STD;
-    }
-// MENU Y CONFIG (!)
-
-// JUEGO (!)
-    void nuevo_juego( juego_t* juego , config_t config ){
-
-        juego->nivel_actual = 0;
-        juego->nivel.tope_enemigos = 0;
-
-        while( estado_juego( *juego) == ESTADO_JUGANDO ){
-
-            if( estado_nivel( juego->nivel ) == ESTADO_GANADO  ){
-                
-                juego->nivel_actual ++;
-                juego->nivel = nuevo_nivel( juego->nivel_actual );
-                mensaje_nuevo_nivel( juego->nivel_actual );
-
-            }else{
-
-                jugar_turno( juego );
-
-                mostrar_juego( *juego );
-                
-                detener_el_tiempo( config.velocidad );
-
-            }
-
-        }
-
-        // GANO O PERDIO 
-    }
-
     void mostrar_opciones( juego_t* juego , config_t* config ){
 
         int opcion = 0;
@@ -257,6 +234,43 @@ int main(){
         return;
     }
 
+    void iniciar_config( config_t* config ){
+        *config = CONFIG_STD;
+    }
+// MENU Y CONFIG (!)
+
+// JUEGO (!)
+    void nuevo_juego( juego_t* juego , config_t config ){
+
+        juego->nivel_actual = 0;
+        juego->nivel.tope_enemigos = 0;
+
+        while( estado_juego( *juego) == ESTADO_JUGANDO ){
+
+            if( estado_nivel( juego->nivel ) == ESTADO_GANADO  ){
+                
+                juego->nivel_actual ++;
+                juego->nivel = nuevo_nivel( juego->nivel_actual );
+                mensaje_nuevo_nivel( juego->nivel_actual );
+
+                juego->torres.resistencia_torre_1 += config.bonus_resistencia;
+                juego->torres.resistencia_torre_2 += config.bonus_resistencia;
+
+            }else{
+
+                jugar_turno( juego );
+
+                mostrar_juego( *juego );
+                
+                detener_el_tiempo( config.velocidad );
+
+            }
+
+        }
+
+        // GANO O PERDIO 
+    }
+
     void mensaje_nuevo_nivel( int nivel ){
 
         system("tput clear");
@@ -283,125 +297,130 @@ int main(){
         nuevo_nivel.tope_defensores = 0;
         nuevo_nivel.tope_enemigos = 0;
 
-        if( nivel <= CANTIDAD_NIVELES )
-            nuevo_nivel.tope_enemigos = 10;
+        config_nivel_t config;
+        config.num = 0;
 
-        if( nivel == 1 ){
+        switch( nivel ){
 
-            dimension = 15 ;
+            case 1:
+                config = NIVEL_1;
+            break;
 
-            nuevo_nivel.tope_enemigos = 100;
-            nuevo_nivel.tope_camino_2 = 0;
+            case 2:
+                config = NIVEL_2;
+            break;
+
+            case 3:
+                config = NIVEL_3;
+            break;
+
+            case 4:
+                config = NIVEL_4;
+            break;
+        }
+
+        
+        if( nivel <= CANTIDAD_NIVELES ){
+
+            int intentos;
+
+            bool cruzado = ( rand()%RAREZA_CRUZADO == 0 );
+
+            dimension = config.dimension ;
+
+            nuevo_nivel.tope_enemigos = config.orcos;
 
             coordenada_t entrada,torre;
 
-            entrada.fil = rand()%dimension;
-            entrada.col = dimension-1;
+            //CAMINO 1
+            if( config.torre_1 ){
 
-            torre.fil = rand()%dimension;
-            torre.col = 0;
+                switch( config.entrada ){
 
-            obtener_camino(
-                nuevo_nivel.camino_1,
-                &nuevo_nivel.tope_camino_1, 
-                entrada, torre
-            );
+                    case ENTRADA_ESTE:
+                        entrada.fil = rand()%dimension;
+                        entrada.col = dimension-1;
+                        torre.fil = rand()%dimension;
+                        torre.col = 0;
+                    break;
 
+                    case ENTRADA_NORTE:
+                        entrada.fil = 0;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                        torre.fil = dimension-1;
+                        torre.col = rand()%(dimension/2);
+                    break;
+
+                    case ENTRADA_SUR:
+                        entrada.fil = dimension-1;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                        torre.fil = 0;
+                        torre.col = rand()%(dimension/2);
+                    break;
+
+                }
+
+                intentos = 0;
+                nuevo_nivel.tope_camino_1 = 0;
+
+                while( (nuevo_nivel.tope_camino_1 < COMPLEJIDAD_NIVELES *dimension) 
+                    && (intentos < MAX_INTENTOS) ){
+
+                    obtener_camino(
+                        nuevo_nivel.camino_1,
+                        &nuevo_nivel.tope_camino_1, 
+                        entrada, torre
+                    );
+                }
+
+            }else
+                nuevo_nivel.tope_camino_1 = 0;
+
+            //CAMINO 2
+            if( config.torre_2 ){
+
+                switch( config.entrada ){
+
+                    case ENTRADA_OESTE:
+                        entrada.fil = rand()%dimension;
+                        entrada.col = 0;
+                        torre.fil = rand()%dimension;
+                        torre.col = dimension-1;
+                    break;
+
+                    case ENTRADA_NORTE:
+                        entrada.fil = 0;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*cruzado;
+                        torre.fil = dimension-1;
+                        torre.col = rand()%(dimension/2)+(dimension/2);
+
+                    break;
+
+                    case ENTRADA_SUR:
+                        entrada.fil = dimension-1;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*cruzado;
+                        torre.fil = 0;
+                        torre.col = rand()%(dimension/2)+(dimension/2);
+                    break;
+
+                }
+
+                intentos = 0;
+                nuevo_nivel.tope_camino_2 = 0;
+
+                while( (nuevo_nivel.tope_camino_2 < COMPLEJIDAD_NIVELES*dimension) 
+                    && (intentos < MAX_INTENTOS) ){
+
+                    obtener_camino(
+                        nuevo_nivel.camino_2,
+                        &nuevo_nivel.tope_camino_2, 
+                        entrada, torre
+                    );
+                }
+
+            }else
+                nuevo_nivel.tope_camino_2 = 0;      
         }
-
-        if( nivel == 2 ){
-
-            dimension = 15 ;
-
-            nuevo_nivel.tope_enemigos = 200;
-            nuevo_nivel.tope_camino_1 = 0;
-
-            coordenada_t entrada,torre;
-
-            entrada.fil = rand()%dimension;
-            entrada.col = 0;
-
-            torre.fil = rand()%dimension;
-            torre.col = dimension-1;
-
-            obtener_camino(
-                nuevo_nivel.camino_2,
-                &nuevo_nivel.tope_camino_2, 
-                entrada, torre
-            );
-
-        }
-
-        if( nivel == 3 ){
-
-            dimension = 20;
-            nuevo_nivel.tope_enemigos = 300;
-
-            coordenada_t entrada,torre;
-
-            // TORRE 1
-            entrada.fil = 0;
-            entrada.col = rand()%(dimension/2);
-
-            torre.fil = dimension-1;
-            torre.col = rand()%(dimension/2);
-
-            obtener_camino(
-                nuevo_nivel.camino_1,
-                &nuevo_nivel.tope_camino_1, 
-                entrada, torre
-            );
-
-            // TORRE 2
-            entrada.fil = 0;
-            entrada.col = rand()%(dimension/2)+(dimension/2);
-
-            torre.fil = dimension-1;
-            torre.col = rand()%(dimension/2)+(dimension/2);
-
-            obtener_camino(
-                nuevo_nivel.camino_2,
-                &nuevo_nivel.tope_camino_2, 
-                entrada, torre
-            );
-
-        }
-
-        if( nivel == 4 ){
-
-            dimension = 20;
-            nuevo_nivel.tope_enemigos = 500;
-
-            coordenada_t entrada,torre;
-
-            // TORRE 1
-            entrada.fil = dimension-1;
-            entrada.col = rand()%(dimension/2);
-
-            torre.fil = 0;
-            torre.col = rand()%(dimension/2);
-
-            obtener_camino(
-                nuevo_nivel.camino_1,
-                &nuevo_nivel.tope_camino_1, 
-                entrada, torre
-            );
-
-            // TORRE 2
-            entrada.fil = dimension-1;
-            entrada.col = rand()%(dimension/2)+(dimension/2);
-
-            torre.fil = 0;
-            torre.col = rand()%(dimension/2)+(dimension/2);
-
-            obtener_camino(
-                nuevo_nivel.camino_2,
-                &nuevo_nivel.tope_camino_2, 
-                entrada, torre
-            );
-
-        }
-
 
 
         for(int i = 0; i<nuevo_nivel.tope_enemigos; i++){
