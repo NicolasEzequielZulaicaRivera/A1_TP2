@@ -122,6 +122,12 @@
 	 * Crea un defensor de un tipo y posicion dadas 
 	 */
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
+
+	// Subprocesos de jugar_turno()
+	void jugar_turno_enanos(juego_t* juego);
+	void jugar_turno_elfos (juego_t* juego);
+	void jugar_turno_orcos (juego_t* juego);
+
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR DE JUEGO ----- (!)
@@ -146,6 +152,12 @@
 		juego->torres.resistencia_torre_2 = RESISTENICA_TORRE_INI;
 		juego->torres.elfos_extra = ELFOS_EXTRA_INI;
 		juego->torres.enanos_extra = ENANOS_EXTRA_INI;
+
+		juego->nivel.tope_camino_1 = 0;
+		juego->nivel.tope_camino_2 = 0;
+		juego->nivel.tope_defensores = 0;
+		juego->nivel.tope_enemigos = 0;
+
 	}
 	
 	int estado_juego(juego_t juego){
@@ -204,60 +216,13 @@
 	
 	void jugar_turno(juego_t* juego){
 	
-		int i;
-		// ENANOS
-	
-		// ELFOS
-	
-		// ORCOS
-		bool mover_1, mover_2;
-	
-		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
-		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
-	
-		for(i = 0; i < juego->nivel.tope_enemigos; i++){
-	
-			if( juego->nivel.enemigos[i].vida > 0 ){
-	
-				if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
-					(juego->nivel.enemigos[i].pos_en_camino)++;
-	
-					// NOOOOO
-					juego->nivel.enemigos[i].vida -= 
-						rand() % 
-						(800 /
-							( 
-								(juego->nivel.tope_camino_1 > juego->nivel.tope_camino_2)?
-								(juego->nivel.tope_camino_1) : (juego->nivel.tope_camino_2)
-							) 
-						) 
-						* (i%3+1);
-					// NOOOOO */
-	
-					if( (juego->nivel.enemigos[i].camino == 1) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
-							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
-					}else if( (juego->nivel.enemigos[i].camino == 2) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
-							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
-					}
-				}
-				else if( mover_1 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 1;
-					mover_1 = false;
-				}
-				else if( mover_2 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 2;
-					mover_2 = false;
-				}
-	
-			}
-	
-		}
+		// map?
+
+		jugar_turno_enanos( juego );
+
+		jugar_turno_elfos ( juego );
+
+		jugar_turno_orcos ( juego );
 	
 		// FIN
 		if( juego->torres.resistencia_torre_1 < 0 )
@@ -321,6 +286,66 @@
 			ATK_NUL;
 	
 		return nuevo_defensor;
+	}
+
+	void jugar_turno_enanos(juego_t* juego){
+		return;
+	}
+
+	void jugar_turno_elfos (juego_t* juego){
+		return;
+	}
+
+	void jugar_turno_orcos (juego_t* juego){
+		int i;
+		bool mover_1, mover_2;
+	
+		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
+		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
+	
+		for(i = 0; i < juego->nivel.tope_enemigos; i++){
+	
+			if( juego->nivel.enemigos[i].vida > 0 ){
+	
+				if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
+					(juego->nivel.enemigos[i].pos_en_camino)++;
+	
+					// NOOOOO
+					juego->nivel.enemigos[i].vida -= 
+						rand() % 
+						(800 /
+							( 
+								(juego->nivel.tope_camino_1 > juego->nivel.tope_camino_2)?
+								(juego->nivel.tope_camino_1) : (juego->nivel.tope_camino_2)
+							) 
+						) 
+						* (i%3+1);
+					// NOOOOO */
+	
+					if( (juego->nivel.enemigos[i].camino == 1) && 
+						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
+							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
+							juego->nivel.enemigos[i].vida = 0;
+					}else if( (juego->nivel.enemigos[i].camino == 2) && 
+						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
+							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
+							juego->nivel.enemigos[i].vida = 0;
+					}
+				}
+				else if( mover_1 ){
+					juego->nivel.enemigos[i].pos_en_camino = 1;
+					juego->nivel.enemigos[i].camino = 1;
+					mover_1 = false;
+				}
+				else if( mover_2 ){
+					juego->nivel.enemigos[i].pos_en_camino = 1;
+					juego->nivel.enemigos[i].camino = 2;
+					mover_2 = false;
+				}
+	
+			}
+	
+		}
 	}
 //----- MOTOR DE JUEGO ----- (¡)
 
