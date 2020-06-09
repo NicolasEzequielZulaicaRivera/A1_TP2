@@ -74,6 +74,17 @@
     const int RAREZA_CRUZADO = 2;
 //  CONSTANTES DE JUEGO (¡)
 
+// HEADER DE PEDIR DATOS (!)
+    // Hay templates en C ? NO. ( vendria bien un C++ ) 
+    #define MAX_MSG 100
+    #define MAX_OPT 10
+
+    // Funciones para pedir datos de distintos tipos
+    void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] );
+    void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] );
+    void pedir_char( char dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] );
+// HEADER DE PEDIR DATOS (¡)
+
 // HEADER DE MENU Y CONFIG (!)
     
   // MENU
@@ -111,7 +122,6 @@
     // Inicializa la config son los valores std
     void iniciar_config( config_t* config );   
 // HEADER DE MENU Y CONFIG (!)
-
 
 // HEADER JUEGO (!)
     /* 
@@ -186,6 +196,22 @@ int main(){
 
 	return 0;
 }
+
+// PEDIR DATOS (!)
+    
+    void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] ){
+        return;    
+    }
+
+    void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] ){
+        return;
+    }
+
+    void pedir_char( char dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] ){
+        return;
+    }
+
+// PEDIR DATOS (¡)
 
 // MENU Y CONFIG (!)
 
