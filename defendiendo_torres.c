@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include "defendiendo_torres.h"
+#include "utiles.h"
 
 
 //----- CONSTANTES COMUNES ----- (!)
@@ -46,9 +47,6 @@
 	 */
 	void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite);
 	
-	// muestra datos relevantes el juego y nivel
-	void mostrar_datos(juego_t juego);
-	
 	/*
 	 * Muestra con formato un arreglo,
 	 * cambiando los caracteres que tengan un sprite asignado
@@ -65,13 +63,16 @@
 	// Hubiera usado 2 librerias
 	// #include "motor_grafico.h"
 	
+	static const float INTERVALO = 0.2f;
+	static const bool MOSTRAR_LOG = true;
+
 	static const int ATK_ELF = 30;
 	static const int ATK_ENA = 60;
 	static const int ATK_NUL =  0;
 	//static const int RNG_ELF =  3;
 	static const int RNG_ENA =  1;
 	// static const int CRITICO_ELF =  70;
-	// static const int CRITICO_ENA = 100;
+	static const int CRITICO_ENA = 100;
 	static const int PROB_CRIT_NUL =  0;
 	static const int PROB_CRIT_MAL =  0;
 	static const int PROB_CRIT_REG = 10;
@@ -125,7 +126,7 @@
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
 
 	// Subprocesos de jugar_turno()
-	void jugar_turno_enanos(juego_t* juego, enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS]);
+	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS]);
 	void jugar_turno_elfos (juego_t* juego, char mapa[MAX_FILAS][MAX_COLUMNAS] );
 	void jugar_turno_orcos (juego_t* juego );
 
@@ -139,10 +140,14 @@
 	 * Carga un mapa con referenias a los enemigos segun el juego
 	 * pre: reccibe un nivel valido
 	 */
-	void cargar_mapa_enemigos( enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
+	void cargar_mapa_res_enemigos( int* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t* nivel);
 
 	// Compara si una coordenada esta dentro de los limites del mapa
 	bool coordenada_valida( coordenada_t coordenada );
+
+
+	// muestra datos relevantes el juego y nivel
+	void mostrar_datos(juego_t juego);
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR DE JUEGO ----- (!)
@@ -232,18 +237,26 @@
 	}
 	
 	void jugar_turno(juego_t* juego){
+
+		char mapa2[MAX_FILAS][MAX_COLUMNAS];
+		cargar_mapa( mapa2, juego->nivel);
 	
-		enemigo_t* mapa2[MAX_FILAS][MAX_COLUMNAS];
-		cargar_mapa_enemigos( mapa2, juego->nivel);
+		int* mapa[MAX_FILAS][MAX_COLUMNAS];
+		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );
 
-		char mapa[MAX_FILAS][MAX_COLUMNAS];
-		cargar_mapa( mapa, juego->nivel);
+		mostrar_juego( *juego);
 
-		jugar_turno_enanos( juego , mapa2);
+		jugar_turno_enanos( juego , mapa);
+		detener_el_tiempo( INTERVALO );
+		mostrar_juego( *juego);
 
-		jugar_turno_elfos ( juego , mapa);
+		jugar_turno_elfos ( juego , mapa2);
+		detener_el_tiempo( INTERVALO );
+		mostrar_juego( *juego);
 
 		jugar_turno_orcos ( juego );
+		detener_el_tiempo( INTERVALO );
+		mostrar_juego( *juego);
 	
 		// FIN
 		if( juego->torres.resistencia_torre_1 < 0 )
@@ -309,11 +322,17 @@
 		return nuevo_defensor;
 	}
 
-	void jugar_turno_enanos(juego_t* juego, enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS]){
+	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS]){
 
 		int i,j,k;
 		coordenada_t pos, pos_atk;
 		bool atacar;
+		int eliminados = 0;
+
+		char str[100]="";
+
+		int prob_crit = juego->critico_gimli;
+		int prob_fail = juego->fallo_gimli;
 
 		for( k=0 ; k < juego->nivel.tope_defensores ; k++){
 
@@ -328,8 +347,23 @@
 						pos_atk.col = j;
 
 						if( coordenada_valida(pos_atk) && atacar ){
-							if( mapa[i][j] != NULL ){
-								(mapa[i][j])->vida = 0;
+							if( (mapa[i][j] != NULL) && ( *(mapa[i][j])!=0 ) ){
+
+								if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+
+									*(mapa[i][j]) -= juego->nivel.defensores[k].fuerza_ataque;
+
+									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+										*(mapa[i][j]) -= CRITICO_ENA*122;
+										strcat(str," crit");
+									}else
+										strcat(str," hit");
+
+									if( *(mapa[i][j]) < 1 )
+										eliminados ++ ;
+								}else
+									strcat(str," fail");
+
 								atacar = false;
 							}
 						}
@@ -338,6 +372,11 @@
 
 			}
 		}
+
+		(juego->nivel.max_enemigos_nivel)-= eliminados ;
+
+		if(MOSTRAR_LOG)
+			printf("Atacan los enanos \n > %s\n Eliminados: %i \n",str,eliminados );
 
 		return;
 	}
@@ -446,7 +485,7 @@
 		}
 	}
 
-	void cargar_mapa_enemigos( enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
+	void cargar_mapa_res_enemigos( int* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t* nivel){
 
 		// Copia del de arriba, sin verificar, pero parece funcionar ::shipit::
 
@@ -456,19 +495,19 @@
 			for( j=0; j < MAX_FILAS; j++)
 					mapa[i][j] = NULL;
 
-		for ( k = 0; k < nivel.tope_enemigos ; k++){
+		for ( k = 0; k < nivel->tope_enemigos ; k++){
 	
-			if( nivel.enemigos[k].pos_en_camino > 0 ){
-				if(nivel.enemigos[k].vida > 0){
+			if( nivel->enemigos[k].pos_en_camino > 0 ){
+				if(nivel->enemigos[k].vida > 0){
 	
-					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
-						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
-						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = &(nivel.enemigos[k]);
-					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
-						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
-						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = &(nivel.enemigos[k]);
+					if( (nivel->enemigos[k].camino == 1) && ( nivel->tope_camino_1 > 2 ) ){
+						i = nivel->camino_1[ nivel->enemigos[k].pos_en_camino ].fil;
+						j = nivel->camino_1[ nivel->enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = &(nivel->enemigos[k].vida);
+					}else if( (nivel->enemigos[k].camino == 2) && ( nivel->tope_camino_2 > 2 ) ){
+						i = nivel->camino_2[ nivel->enemigos[k].pos_en_camino ].fil;
+						j = nivel->camino_2[ nivel->enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = &(nivel->enemigos[k].vida);
 					}
 		
 				}
@@ -479,17 +518,17 @@
 	bool coordenada_valida( coordenada_t coordenada ){
 		return (coordenada.fil > 0) && (coordenada.col > 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
 	}
-//----- MOTOR DE JUEGO ----- (¡)
 
-//----- MOTOR GRAFICO ----- (!)
- 
 	void mostrar_datos(juego_t juego){
 		printf("\n Nivel: %i ",juego.nivel_actual);
 		printf("\t Torre 1: %i ",juego.torres.resistencia_torre_1);
 		printf("\t Torre 2: %i ",juego.torres.resistencia_torre_2);
-		printf("\t Enemigos: %i ",juego.nivel.tope_enemigos);// <-- ACTUALIZAR 
+		printf("\t Enemigos: %i ",juego.nivel.max_enemigos_nivel);// este atributo esta siendo reciclado
 		printf("\n");
 	}
+//----- MOTOR DE JUEGO ----- (¡)
+
+//----- MOTOR GRAFICO ----- (!)
 	
 	void mostrar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], int dimension ){
 		

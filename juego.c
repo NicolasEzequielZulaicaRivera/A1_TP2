@@ -175,8 +175,8 @@ int main(){
     config_t config;
     iniciar_config( &config );
 
-    int viento = 0;
-    int humedad = 0;
+    int viento = 50;
+    int humedad = 50;
     char animo_legolas = 'B';
     char animo_gimli = 'B';
 
@@ -349,9 +349,9 @@ int main(){
 
                 jugar_turno( juego );
 
-                mostrar_juego( *juego );
-                
-                detener_el_tiempo( config.velocidad );
+                // Si no se muestra en 
+                //mostrar_juego( *juego );
+                //detener_el_tiempo( config.velocidad );
 
             }
 
@@ -441,6 +441,7 @@ int main(){
             dimension = config.dimension ;
 
             nuevo_nivel.tope_enemigos = config.orcos;
+            nuevo_nivel.max_enemigos_nivel = config.orcos;
             nuevo_nivel.tope_defensores = 0;
 
             coordenada_t entrada,torre;
