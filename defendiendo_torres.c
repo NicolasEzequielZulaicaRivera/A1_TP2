@@ -7,7 +7,7 @@
 	static const char ANIMO_REGULAR = 'R';
 	static const char ANIMO_MALO    = 'M';
 	static const char VACIO  = ' ';
-	static const char CAMINO = '_';
+	static const char CAMINO = '#';
 	static const char TORRE   = 'T';
 	static const char TORRE_1 = '1';
 	static const char TORRE_2 = '2';

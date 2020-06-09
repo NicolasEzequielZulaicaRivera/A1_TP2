@@ -9,7 +9,7 @@
     static const int ESTADO_JUGANDO = 0;
     static const int ESTADO_GANADO  = 1;
     //static const int ESTADO_PERDIDO =-1;
-    static const int CANTIDAD_NIVELES = 4;
+    #define CANTIDAD_NIVELES  4
 
     static const int RES_ORCO  = 200;
     static const int RES_ORCO_RAND  = 100; 
@@ -105,6 +105,9 @@
         .bonus_resistencia = 0
     };
 
+    // muestra opciones/configuracion
+    void mostrar_opciones( juego_t* juego, config_t* config );
+
     // Inicializa la config son los valores std
     void iniciar_config( config_t* config );   
 // HEADER DE MENU Y CONFIG (!)
@@ -115,10 +118,7 @@
      * Comienza un nuevo juego
      * pre: recibe un juego inicializado
      */
-    void nuevo_juego( juego_t* juego , config_t config );
-
-    // muestra opciones/configuracion
-    void mostrar_opciones( juego_t* juego, config_t* config );
+    void nuevo_juego( juego_t* juego , config_t config );  
 
     /*
      * Devuelve un nivel_t segun el nivel(numero)
@@ -132,6 +132,12 @@
 
     // Muestra un mensaje al pasar de nivel
     void mensaje_nuevo_nivel( int nivel );
+
+    // Pide al usurio que coloque defensores segun las especificaciones del nivel
+    void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  );
+
+    // Devuelve las especificaciones del nivel pedido
+    config_nivel_t buscar_config_nivel( int nivel );
 // HEADER JUEGO (¡)
 
 
@@ -252,6 +258,11 @@ int main(){
                 juego->nivel_actual ++;
                 juego->nivel = nuevo_nivel( juego->nivel_actual );
                 mensaje_nuevo_nivel( juego->nivel_actual );
+
+                if( juego->nivel_actual <= CANTIDAD_NIVELES ){
+
+                    agregar_defensores( juego, buscar_config_nivel( juego->nivel_actual ) );
+                }
 
                 juego->torres.resistencia_torre_1 += config.bonus_resistencia;
                 juego->torres.resistencia_torre_2 += config.bonus_resistencia;
@@ -430,6 +441,32 @@ int main(){
         }
 
         return nuevo_nivel;
+    }
+
+    void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  ){
+
+        mostrar_juego(*juego);
+        printf("\n INGRESAR DEFENSORES \n");
+
+        int i;
+        scanf("%i",&i);
+    }
+
+    config_nivel_t buscar_config_nivel( int nivel ){
+
+        config_nivel_t config_nivel;
+        config_nivel.num = 0;
+        config_nivel.orcos = 0;
+        config_nivel.dimension = 0;
+        config_nivel.torre_1 = config_nivel.torre_2 = false;
+
+        config_nivel_t niveles[CANTIDAD_NIVELES] = { NIVEL_1, NIVEL_2, NIVEL_3, NIVEL_4 };
+
+        for( int i = 0; i < CANTIDAD_NIVELES; i++ )
+            if( niveles[i].num == nivel )
+                config_nivel = niveles[i];
+
+        return config_nivel;
     }
 // JUEGO (¡)
 
