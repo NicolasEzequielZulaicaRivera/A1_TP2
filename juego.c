@@ -16,10 +16,12 @@
     //static const int ESTADO_PERDIDO =-1;
     static const int INVALIDO =-1;
 
+    static const char CONFIRMAR ='S';
+
     #define CANTIDAD_NIVELES  4
 
-    static const int RES_ORCO  = 200;
-    static const int RES_ORCO_RAND  = 100; 
+    static const int RES_ORCO  = 200;//200
+    static const int RES_ORCO_RAND  = 100;//100
 
     typedef struct config_nivel{
         int num;
@@ -116,11 +118,19 @@
     typedef struct config {
         float velocidad;
         int bonus_resistencia;
+        bool saltear_niveles, godmode;
     } config_t;
 
     const config_t CONFIG_STD ={
         .velocidad = 0.4f,
-        .bonus_resistencia = 0
+        .bonus_resistencia = 0,
+        .saltear_niveles = false, .godmode = false
+    };
+
+    const config_t CONFIG_DEBUG ={
+        .velocidad = 0.1f,
+        .bonus_resistencia = 50000,
+        .saltear_niveles = true, .godmode = true
     };
 
     // muestra opciones/configuracion
@@ -181,8 +191,7 @@ int main(){
 
             case OPCION_TESTEO:
                 opcion = OPCION_NUEVO_JUEGO;
-                config.velocidad = 0.1f;
-                config.bonus_resistencia = 1000;
+                config = CONFIG_DEBUG;
 
             case OPCION_NUEVO_JUEGO:
                 inicializar_juego(&juego, viento, humedad, animo_legolas, animo_gimli);
@@ -251,7 +260,6 @@ int main(){
 
         return;
     }
-
 // PEDIR DATOS (¡)
 
 // MENU Y CONFIG (!)
@@ -265,7 +273,7 @@ int main(){
         printf("----------------------------------------------------\n");
         printf("\n");
         printf("%i: Nuevo Juego \n", OPCION_NUEVO_JUEGO);
-        printf("%i: Animos \n", OPCION_INICIALIZAR_ANIMOS);
+        printf("%i: Iniciar Animos \n", OPCION_INICIALIZAR_ANIMOS);
         printf("%i: Opciones \n", OPCION_MOSTRAR_OPCIONES);
         printf("%i: Salir \n", OPCION_SALIR);
 
@@ -287,7 +295,7 @@ int main(){
         printf("1: Velocidad - [FRECUENCIA : %f] \n",config->velocidad);
         printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
         printf("3: Revivir a Sauron \n");
-        printf("4: Salir \n");
+        printf("4: Volver \n");
 
         char input[20];
         scanf("%s",input);
@@ -313,6 +321,10 @@ int main(){
 // MENU Y CONFIG (!)
 
 // JUEGO (!)
+
+    // Aplica acciones extra al comenzar un nivel segun la configuracion
+    void bonus_nuevo_nivel( juego_t* juego , config_t config );
+
     void nuevo_juego( juego_t* juego , config_t config ){
 
         juego->nivel_actual = 0;
@@ -326,13 +338,12 @@ int main(){
                 juego->nivel = nuevo_nivel( juego->nivel_actual );
                 mensaje_nuevo_nivel( juego->nivel_actual );
 
-                if( juego->nivel_actual <= CANTIDAD_NIVELES ){
+                bonus_nuevo_nivel( juego , config );
+
+                if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.tope_enemigos > 0) ){
 
                     agregar_defensores( juego, buscar_config_nivel( juego->nivel_actual ) );
                 }
-
-                juego->torres.resistencia_torre_1 += config.bonus_resistencia;
-                juego->torres.resistencia_torre_2 += config.bonus_resistencia;
 
             }else{
 
@@ -344,14 +355,36 @@ int main(){
 
             }
 
+            if(config.godmode){
+                juego->torres.resistencia_torre_1 += 1;
+                juego->torres.resistencia_torre_2 += 1;
+            }
+
         }
 
         // GANO O PERDIO 
     }
 
+    void bonus_nuevo_nivel( juego_t* juego , config_t config ){
+
+        juego->torres.resistencia_torre_1 += config.bonus_resistencia;
+        juego->torres.resistencia_torre_2 += config.bonus_resistencia;
+
+        if( config.saltear_niveles ){
+            char rta;
+            printf("\n SALTEAR NIVEL [%c]\n", CONFIRMAR );
+            scanf("%c",&rta);
+
+            if( toupper(rta) == toupper(CONFIRMAR) )
+                juego->nivel.tope_enemigos = 0;
+         
+        }
+
+    }
+
     void mensaje_nuevo_nivel( int nivel ){
 
-        system("tput clear");
+        system("clear");
 
         if( nivel > 0)
             printf("\n\t HAS COMPLETADO EL NIVEL %i \n", nivel-1 );
@@ -403,6 +436,7 @@ int main(){
             int intentos;
 
             bool cruzado = ( rand()%RAREZA_CRUZADO == 0 );
+            cruzado = true;
 
             dimension = config.dimension ;
 
@@ -425,14 +459,14 @@ int main(){
 
                     case ENTRADA_NORTE:
                         entrada.fil = 0;
-                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(cruzado);
                         torre.fil = dimension-1;
                         torre.col = rand()%(dimension/2);
                     break;
 
                     case ENTRADA_SUR:
                         entrada.fil = dimension-1;
-                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(cruzado);
                         torre.fil = 0;
                         torre.col = rand()%(dimension/2);
                     break;
@@ -469,7 +503,7 @@ int main(){
 
                     case ENTRADA_NORTE:
                         entrada.fil = 0;
-                        entrada.col = rand()%(dimension/2)+(dimension/2)*cruzado;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
                         torre.fil = dimension-1;
                         torre.col = rand()%(dimension/2)+(dimension/2);
 
@@ -477,7 +511,7 @@ int main(){
 
                     case ENTRADA_SUR:
                         entrada.fil = dimension-1;
-                        entrada.col = rand()%(dimension/2)+(dimension/2)*cruzado;
+                        entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
                         torre.fil = 0;
                         torre.col = rand()%(dimension/2)+(dimension/2);
                     break;

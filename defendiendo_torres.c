@@ -319,18 +319,6 @@
 				if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
 					(juego->nivel.enemigos[i].pos_en_camino)++;
 	
-					// NOOOOO
-					juego->nivel.enemigos[i].vida -= 
-						rand() % 
-						(800 /
-							( 
-								(juego->nivel.tope_camino_1 > juego->nivel.tope_camino_2)?
-								(juego->nivel.tope_camino_1) : (juego->nivel.tope_camino_2)
-							) 
-						) 
-						* (i%3+1);
-					// NOOOOO */
-	
 					if( (juego->nivel.enemigos[i].camino == 1) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
