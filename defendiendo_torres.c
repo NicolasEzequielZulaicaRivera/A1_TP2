@@ -8,6 +8,8 @@
 	static const char ANIMO_MALO    = 'M';
 	static const char VACIO  = ' ';
 	static const char CAMINO = '#';
+	static const char CAMINO_1 = '!';
+	static const char CAMINO_2 = '"';
 	static const char TORRE   = 'T';
 	static const char TORRE_1 = '1';
 	static const char TORRE_2 = '2';
@@ -15,6 +17,7 @@
 	static const char ORCO  = 'O';
 	static const char ELFO  = 'L';
 	static const char ENANO = 'G';
+	//static const char SIN_TIPO = 'X';
 //----- CONSTANTES COMUNES ----- (¡)
 
 //----- HEADER MOTOR GRAFICO ----- (!)
@@ -23,7 +26,7 @@
 	#include <string.h>
 	
 	#define SPRITE_SIZE 2 // >= 2
-	#define MAX_SPRITES 10
+	#define MAX_SPRITES 15
 	
 	typedef char sprite_t[SPRITE_SIZE+1];
 	
@@ -45,12 +48,6 @@
 	
 	// muestra datos relevantes el juego y nivel
 	void mostrar_datos(juego_t juego);
-	
-	/*
-	 * Carga un mapa de caracteres segun el juego
-	 * pre: reccibe un nivel valido
-	 */
-	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
 	
 	/*
 	 * Muestra con formato un arreglo,
@@ -91,6 +88,8 @@
 	static const int ESTADO_JUGANDO = 0;
 	static const int ESTADO_GANADO  = 1;
 	static const int ESTADO_PERDIDO =-1;
+
+	static const int INVALIDO =-1;
 	
 	static const int CANTIDAD_NIVELES = 4;
 	
@@ -127,6 +126,13 @@
 	void jugar_turno_enanos(juego_t* juego);
 	void jugar_turno_elfos (juego_t* juego);
 	void jugar_turno_orcos (juego_t* juego);
+
+
+	/*
+	 * Carga un mapa de caracteres segun el juego
+	 * pre: reccibe un nivel valido
+	 */
+	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
 
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
@@ -191,17 +197,20 @@
 	int agregar_defensor(nivel_t* nivel, coordenada_t posicion, char tipo){
 	
 		bool es_posible = true;
-	
+
+		// ESTA DENTRO DEL TABLERO -> aplicar dimension
 		es_posible = (posicion.fil < MAX_FILAS) && (posicion.col < MAX_COLUMNAS);
+		
+		// NO ESTA EN EL CAMINO 1
+		if( es_posible )
+			es_posible = ( buscar_coordenada( nivel->camino_1, nivel->tope_camino_1, posicion) == INVALIDO );
+		
+		// NO ESTA EN EL CAMINO 2
+		if( es_posible )
+			es_posible = ( buscar_coordenada( nivel->camino_2, nivel->tope_camino_2, posicion) == INVALIDO );
 	
 		if( es_posible )
-			es_posible = ( buscar_coordenada( nivel->camino_1, nivel->tope_camino_1, posicion) == -1 );
-	
-		if( es_posible )
-			es_posible = ( buscar_coordenada( nivel->camino_2, nivel->tope_camino_2, posicion) == -1 );
-	
-		if( es_posible )
-			es_posible = ( buscar_defensor_en_coordenada( nivel->defensores, nivel->tope_defensores, posicion) == -1 );
+			es_posible = ( buscar_defensor_en_coordenada( nivel->defensores, nivel->tope_defensores, posicion) == INVALIDO );
 	
 		if( es_posible ){
 	
@@ -211,7 +220,7 @@
 	
 		}
 	
-		return es_posible;
+		return (es_posible? 0 : -1);
 	}
 	
 	void jugar_turno(juego_t* juego){
@@ -264,9 +273,9 @@
 	}
 	
 	int buscar_defensor_en_coordenada( defensor_t vec[], int tope , coordenada_t coord){
-		int pos = -1;
+		int pos = INVALIDO;
 		int i = 0 ; 
-		while( (pos == -1) && (i < tope) ){
+		while( (pos == INVALIDO) && (i < tope) ){
 			if( misma_coordenada(coord, vec[i].posicion) )
 					pos = i;			
 			i++;
@@ -347,6 +356,66 @@
 	
 		}
 	}
+
+	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
+	
+		int i, j, k;
+		//int dim = dimension(nivel);
+		// coordenada_t pos; // asignacion defectuosa ? <- 2020/6/7 22:20 - No recibia fil y col correctas => se uso i,j
+		for (i = 0; i < MAX_FILAS; i++)
+			for( j = 0; j < MAX_COLUMNAS; j++ )
+				mapa[i][j] = VACIO;
+	
+		// CAMINO 1
+		for ( k = 0; k < nivel.tope_camino_1 ; k++)
+			mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO_1;
+
+		// CAMINO 2
+		for ( k = 0; k < nivel.tope_camino_2 ; k++)
+			mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO_2;
+
+		// ENTRADA Y TORRE  1
+		if( nivel.tope_camino_1 > 2){
+			mapa[ nivel.camino_1[0].fil ][ nivel.camino_1[0].col ] = ENTRADA;
+			mapa[ nivel.camino_1[nivel.tope_camino_1-1].fil ][ nivel.camino_1[nivel.tope_camino_1-1].col ] = TORRE_1;		
+		}
+
+		// ENTRADA Y TORRE  2
+		if( nivel.tope_camino_2 > 2){
+			mapa[ nivel.camino_2[0].fil ][ nivel.camino_2[0].col ] = ENTRADA;
+			mapa[ nivel.camino_2[ nivel.tope_camino_2-1].fil ][ nivel.camino_2[nivel.tope_camino_2-1].col ] = TORRE_2;		
+		}
+	
+		// ENMIGOS
+		for ( k = 0; k < nivel.tope_enemigos ; k++){
+	
+			if( nivel.enemigos[k].pos_en_camino > 0 ){
+				if(nivel.enemigos[k].vida > 0){
+	
+					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
+						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
+						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = ORCO;
+					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
+						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
+						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = ORCO;
+					}
+		
+				}else{
+					//MOSTRAR CADAVER. ah re morboso
+				}
+			}
+		}	
+
+		// DEFENSORES
+		for( k = 0; k < nivel.tope_defensores ; k++ ){
+
+			i = nivel.defensores[k].posicion.fil;
+			j = nivel.defensores[k].posicion.col;
+			mapa[i][j] = nivel.defensores[k].tipo;
+		}
+	};
 //----- MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR GRAFICO ----- (!)
@@ -393,7 +462,7 @@
 		printf("\n\n");
 	}
 	
-	// ------------  INICIAR SPRITES  ------------
+	// ------------  INICIAR SPRITES ACA ------------
 	void iniciar_sprites( sprite_map_t* sprite_map ){
 	
 		sprite_map->tope = 0;
@@ -407,11 +476,11 @@
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ELFO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "{i");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "{L");
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ENANO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "et");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "TG");
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = TORRE;
@@ -433,6 +502,12 @@
 		sprite_map->indice [ sprite_map->tope ] = CAMINO;
 		strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
 		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = CAMINO_1;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = CAMINO_2;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "()");
+		(sprite_map->tope)++;
 	}
 	
 	void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite){
@@ -447,54 +522,6 @@
 				//return; // -> el primero				
 			}
 	}
-	
-	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
-	
-		int i, j, k;
-		//int dim = dimension(nivel);
-		// coordenada_t pos; // asignacion defectuosa ? <- 2020/6/7 22:20 - No recibia fil y col correctas => se uso i,j
-		for (i = 0; i < MAX_FILAS; i++)
-			for( j = 0; j < MAX_COLUMNAS; j++ )
-				mapa[i][j] = VACIO;
-	
-		// CAMINO 1
-		for ( k = 0; k < nivel.tope_camino_1 ; k++)
-			mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO;
-		if(k > 0){
-			mapa[ nivel.camino_1[0].fil ][ nivel.camino_1[0].col ] = ENTRADA;
-			mapa[ nivel.camino_1[k-1].fil ][ nivel.camino_1[k-1].col ] = TORRE_1;		
-		}
-		// CAMINO 2
-		for ( k = 0; k < nivel.tope_camino_2 ; k++)
-			mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO;
-		if(k > 0){
-			mapa[ nivel.camino_2[0].fil ][ nivel.camino_2[0].col ] = ENTRADA;
-			mapa[ nivel.camino_2[k-1].fil ][ nivel.camino_2[k-1].col ] = TORRE_2;		
-		}
-	
-		// ENMIGOS
-		for ( k = 0; k < nivel.tope_enemigos ; k++){
-	
-			if( nivel.enemigos[k].pos_en_camino > 0 ){
-				if(nivel.enemigos[k].vida > 0){
-	
-					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
-						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
-						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
-					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
-						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
-						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
-					}
-		
-				}else{
-					//MOSTRAR CADAVER. ah re morboso
-				}
-			}
-		}
-	
-	};
 	
 	int dimension(nivel_t nivel){
 	

@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <time.h>
 #include <stdbool.h>
 #include "animos.h"
@@ -6,9 +8,13 @@
 #include "utiles.h"
 
 //  CONSTANTES DE JUEGO (!)
+    static const char ENANO = 'G';
+
     static const int ESTADO_JUGANDO = 0;
     static const int ESTADO_GANADO  = 1;
     //static const int ESTADO_PERDIDO =-1;
+    static const int INVALIDO =-1;
+
     #define CANTIDAD_NIVELES  4
 
     static const int RES_ORCO  = 200;
@@ -82,7 +88,7 @@
     // Funciones para pedir datos de distintos tipos
     void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] );
     void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] );
-    void pedir_char( char dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] );
+    void pedir_char( char* dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] );
 // HEADER DE PEDIR DATOS (¡)
 
 // HEADER DE MENU Y CONFIG (!)
@@ -200,14 +206,48 @@ int main(){
 // PEDIR DATOS (!)
     
     void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] ){
+
+        printf("%s\n",msg );
+        printf("[%i - %i] > ",min,max );
+
+        do{
+            scanf(" %i",dato);
+        } while( (*dato < min) || (*dato > max) );
+
         return;    
     }
 
     void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] ){
+        
+        printf("%s\n",msg );
+        printf("[%f - %f] > ",min,max );
+
+        do{
+            scanf(" %f",dato);
+        } while( (*dato < min) || (*dato > max) );
+
         return;
     }
 
-    void pedir_char( char dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] ){
+    void pedir_char( char* dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] ){
+
+        int i;
+        printf("%s\n",msg );
+        for( i = 0 ; i < tope ; i++ )
+            printf(" [%c : %s] ",opciones[i],nombre_opciones[i] );
+
+        bool dato_valido = false;
+
+        do{
+            scanf(" %c",dato);
+            *dato = (char) toupper((*dato));
+
+            for( i = 0 ; i < tope ; i++ )
+                if( *dato == toupper(opciones[i])  )
+                    dato_valido = true;
+
+        } while( !dato_valido );
+
         return;
     }
 
@@ -366,6 +406,7 @@ int main(){
             dimension = config.dimension ;
 
             nuevo_nivel.tope_enemigos = config.orcos;
+            nuevo_nivel.tope_defensores = 0;
 
             coordenada_t entrada,torre;
 
@@ -469,13 +510,32 @@ int main(){
         return nuevo_nivel;
     }
 
+    //void pedir_colocar_defensor()
+
     void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  ){
 
-        mostrar_juego(*juego);
-        printf("\n INGRESAR DEFENSORES \n");
+        int col, fil, i;
+        char msg [MAX_MSG];
+        coordenada_t posicion;
+        
+        // ENANOS
+        for( i=0; i<config_nivel.enanos; i++){
+            do{
+                mostrar_juego(*juego);
+                printf("\n COLOCAR DEFENSORES \n");
+                printf("\n Enanos: %i \t Elfos: %i \n",config_nivel.enanos,config_nivel.elfos);
 
-        int i;
-        scanf("%i",&i);
+                sprintf(msg, "Ingrese la fila del enano %i",i+1);
+                pedir_int( &fil, 0, config_nivel.dimension-1,msg);
+                sprintf(msg, "Ingrese la columna del enano %i",i+1);
+                pedir_int( &col, 0, config_nivel.dimension-1,msg);
+
+                posicion.fil = fil;
+                posicion.col = col;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
+        }
+        
     }
 
     config_nivel_t buscar_config_nivel( int nivel ){
