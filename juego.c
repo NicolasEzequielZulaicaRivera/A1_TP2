@@ -9,6 +9,7 @@
 
 //  CONSTANTES DE JUEGO (!)
     static const char ENANO = 'G';
+    static const char ELFO = 'L';
 
     static const int ESTADO_JUGANDO = 0;
     static const int ESTADO_GANADO  = 1;
@@ -510,8 +511,6 @@ int main(){
         return nuevo_nivel;
     }
 
-    //void pedir_colocar_defensor()
-
     void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  ){
 
         int col, fil, i;
@@ -534,6 +533,24 @@ int main(){
                 posicion.col = col;
 
             } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
+        }
+
+        // ELFOS
+        for( i=0; i<config_nivel.elfos; i++){
+            do{
+                mostrar_juego(*juego);
+                printf("\n COLOCAR DEFENSORES \n");
+                printf("\n Enanos: %i \t Elfos: %i \n",config_nivel.enanos,config_nivel.elfos);
+
+                sprintf(msg, "Ingrese la fila del elfo %i",i+1);
+                pedir_int( &fil, 0, config_nivel.dimension-1,msg);
+                sprintf(msg, "Ingrese la columna del elfo %i",i+1);
+                pedir_int( &col, 0, config_nivel.dimension-1,msg);
+
+                posicion.fil = fil;
+                posicion.col = col;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, ELFO) == INVALIDO );
         }
         
     }
