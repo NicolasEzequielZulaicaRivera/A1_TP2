@@ -68,6 +68,8 @@
 	static const int ATK_ELF = 30;
 	static const int ATK_ENA = 60;
 	static const int ATK_NUL =  0;
+	//static const int RNG_ELF =  3;
+	static const int RNG_ENA =  1;
 	// static const int CRITICO_ELF =  70;
 	// static const int CRITICO_ENA = 100;
 	static const int PROB_CRIT_NUL =  0;
@@ -123,10 +125,9 @@
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
 
 	// Subprocesos de jugar_turno()
-	void jugar_turno_enanos(juego_t* juego);
-	void jugar_turno_elfos (juego_t* juego);
-	void jugar_turno_orcos (juego_t* juego);
-
+	void jugar_turno_enanos(juego_t* juego, enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS]);
+	void jugar_turno_elfos (juego_t* juego, char mapa[MAX_FILAS][MAX_COLUMNAS] );
+	void jugar_turno_orcos (juego_t* juego );
 
 	/*
 	 * Carga un mapa de caracteres segun el juego
@@ -134,6 +135,14 @@
 	 */
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
 
+	/*
+	 * Carga un mapa con referenias a los enemigos segun el juego
+	 * pre: reccibe un nivel valido
+	 */
+	void cargar_mapa_enemigos( enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
+
+	// Compara si una coordenada esta dentro de los limites del mapa
+	bool coordenada_valida( coordenada_t coordenada );
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR DE JUEGO ----- (!)
@@ -163,7 +172,6 @@
 		juego->nivel.tope_camino_2 = 0;
 		juego->nivel.tope_defensores = 0;
 		juego->nivel.tope_enemigos = 0;
-
 	}
 	
 	int estado_juego(juego_t juego){
@@ -225,11 +233,15 @@
 	
 	void jugar_turno(juego_t* juego){
 	
-		// map?
+		enemigo_t* mapa2[MAX_FILAS][MAX_COLUMNAS];
+		cargar_mapa_enemigos( mapa2, juego->nivel);
 
-		jugar_turno_enanos( juego );
+		char mapa[MAX_FILAS][MAX_COLUMNAS];
+		cargar_mapa( mapa, juego->nivel);
 
-		jugar_turno_elfos ( juego );
+		jugar_turno_enanos( juego , mapa2);
+
+		jugar_turno_elfos ( juego , mapa);
 
 		jugar_turno_orcos ( juego );
 	
@@ -297,11 +309,40 @@
 		return nuevo_defensor;
 	}
 
-	void jugar_turno_enanos(juego_t* juego){
+	void jugar_turno_enanos(juego_t* juego, enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS]){
+
+		int i,j,k;
+		coordenada_t pos, pos_atk;
+		bool atacar;
+
+		for( k=0 ; k < juego->nivel.tope_defensores ; k++){
+
+			atacar = true;
+
+			if( juego->nivel.defensores[k].tipo == ENANO  ){
+				pos = juego->nivel.defensores[k].posicion;
+
+				for( i = (pos.fil - RNG_ENA ); i <= (pos.fil + RNG_ENA ); i++ ){
+					for( j = (pos.col - RNG_ENA ); j <= (pos.col + RNG_ENA ); j++ ){
+						pos_atk.fil = i;
+						pos_atk.col = j;
+
+						if( coordenada_valida(pos_atk) && atacar ){
+							if( mapa[i][j] != NULL ){
+								(mapa[i][j])->vida = 0;
+								atacar = false;
+							}
+						}
+					}
+				}
+
+			}
+		}
+
 		return;
 	}
 
-	void jugar_turno_elfos (juego_t* juego){
+	void jugar_turno_elfos (juego_t* juego, char mapa[MAX_FILAS][MAX_COLUMNAS]){
 		return;
 	}
 
@@ -403,7 +444,41 @@
 			j = nivel.defensores[k].posicion.col;
 			mapa[i][j] = nivel.defensores[k].tipo;
 		}
-	};
+	}
+
+	void cargar_mapa_enemigos( enemigo_t* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
+
+		// Copia del de arriba, sin verificar, pero parece funcionar ::shipit::
+
+		int i,j,k;
+
+		for( i=0; i < MAX_FILAS; i++)
+			for( j=0; j < MAX_FILAS; j++)
+					mapa[i][j] = NULL;
+
+		for ( k = 0; k < nivel.tope_enemigos ; k++){
+	
+			if( nivel.enemigos[k].pos_en_camino > 0 ){
+				if(nivel.enemigos[k].vida > 0){
+	
+					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
+						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
+						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = &(nivel.enemigos[k]);
+					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
+						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
+						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
+						mapa[ i ][ j ] = &(nivel.enemigos[k]);
+					}
+		
+				}
+			}
+		}	
+	}
+
+	bool coordenada_valida( coordenada_t coordenada ){
+		return (coordenada.fil > 0) && (coordenada.col > 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
+	}
 //----- MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR GRAFICO ----- (!)
