@@ -5,7 +5,7 @@
 #include "defendiendo_torres.h"
 #include "utiles.h"
 
-static const float INTERVALO = 0.4f;
+//static const float INTERVALO = 0.4f;
 
 static const int ESTADO_JUGANDO = 0;
 static const int ESTADO_GANADO  = 1;
@@ -22,6 +22,15 @@ static const int CANTIDAD_NIVELES = 4;
 static const int RES_ORCO  = 200;
 static const int RES_ORCO_RAND  = 100;
 
+typedef struct config {
+    float velocidad;
+} config_t;
+static const float VELOCIDAD_STD = 0.4f;
+
+// Inicializa la config son los valores std
+void iniciar_config( config_t* config );
+
+
 /*
  * Muestra un menu y actualiza la opcion elegida :
  * 1 > Comenzar un nuevo juego
@@ -35,10 +44,10 @@ void menu( int* opcion );
  * Comienza un nuevo juego
  * pre: recibe un juego inicializado
  */
-void nuevo_juego( juego_t* juego );
+void nuevo_juego( juego_t* juego , config_t config );
 
 // muestra opciones/configuracion
-void mostrar_opciones( juego_t* juego );
+void mostrar_opciones( juego_t* juego, config_t* config );
 
 /*
  * Devuelve un nivel_t segun el nivel(numero)
@@ -60,6 +69,9 @@ int main(){
     //srand(time(NULL)); 
     srand(5); 
 
+    config_t config;
+    iniciar_config( &config );
+
     int viento = 0;
     int humedad = 0;
     char animo_legolas = 'B';
@@ -77,7 +89,7 @@ int main(){
 
             case OPCION_NUEVO_JUEGO:
                 inicializar_juego(&juego, viento, humedad, animo_legolas, animo_gimli);
-                nuevo_juego( &juego );
+                nuevo_juego( &juego , config );
             break;
 
             case OPCION_INICIALIZAR_ANIMOS:
@@ -85,16 +97,12 @@ int main(){
             break;
 
             case OPCION_MOSTRAR_OPCIONES:
-                mostrar_opciones( &juego );
+                mostrar_opciones( &juego, &config );
             break;
 
         }
 
     }
-
-    
-
-    
 
 	return 0;
 
@@ -118,7 +126,7 @@ void menu( int* opcion ){
     *opcion = input[0]-48;
 }
 
-void nuevo_juego( juego_t* juego ){
+void nuevo_juego( juego_t* juego , config_t config ){
 
     juego->nivel_actual = 0;
     juego->nivel.tope_enemigos = 0;
@@ -137,7 +145,7 @@ void nuevo_juego( juego_t* juego ){
 
             mostrar_juego( *juego );
             
-            detener_el_tiempo( INTERVALO );
+            detener_el_tiempo( config.velocidad );
 
         }
 
@@ -147,7 +155,7 @@ void nuevo_juego( juego_t* juego ){
 
 }
 
-void mostrar_opciones( juego_t* juego ){
+void mostrar_opciones( juego_t* juego , config_t* config ){
 
     int opcion = 0;
 
@@ -157,8 +165,8 @@ void mostrar_opciones( juego_t* juego ){
     printf("-------------         OPCIONES         -------------\n");
     printf("----------------------------------------------------\n");
     printf("\n");
-    printf("1: Subir volumen \n");
-    printf("2: Bajar volumen \n");
+    printf("1: Velocidad - [FRECUENCIA : %f] \n",config->velocidad);
+    printf("2: NADA \n");
     printf("3: Revivir a Sauron \n");
     printf("4: Salir \n");
 
@@ -166,8 +174,13 @@ void mostrar_opciones( juego_t* juego ){
     scanf("%s",input);
     opcion = input[0]-48;
 
-    if( opcion == 0)
-        return;
+    switch( opcion ){
+        case 1:
+            printf("Ingrese la FRECUENCIA [ 0.1 - 1.0 ]  > ");
+            scanf("%f", &(config->velocidad) );
+        break;
+    }
+    return;
 }
 
 void mensaje_nuevo_nivel( int nivel ){
@@ -324,4 +337,8 @@ nivel_t nuevo_nivel( int nivel ){
     }
 
     return nuevo_nivel;
+}
+
+void iniciar_config( config_t* config ){
+    config->velocidad = VELOCIDAD_STD;
 }
