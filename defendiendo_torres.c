@@ -65,13 +65,15 @@
 	
 	static const float INTERVALO = 0.2f;
 	static const bool MOSTRAR_LOG = true;
+	#define MAX_LOG 500
+	#define MIN_LOG 50
 
 	static const int ATK_ELF = 30;
 	static const int ATK_ENA = 60;
 	static const int ATK_NUL =  0;
-	//static const int RNG_ELF =  3;
+	static const int RNG_ELF =  3;
 	static const int RNG_ENA =  1;
-	// static const int CRITICO_ELF =  70;
+	static const int CRITICO_ELF =  70;
 	static const int CRITICO_ENA = 100;
 	static const int PROB_CRIT_NUL =  0;
 	static const int PROB_CRIT_MAL =  0;
@@ -126,9 +128,9 @@
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
 
 	// Subprocesos de jugar_turno()
-	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS]);
-	void jugar_turno_elfos (juego_t* juego, char mapa[MAX_FILAS][MAX_COLUMNAS] );
-	void jugar_turno_orcos (juego_t* juego );
+	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]);
+	void jugar_turno_elfos (juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG] );
+	void jugar_turno_orcos (juego_t* juego, char registro[MAX_LOG] );
 
 	/*
 	 * Carga un mapa de caracteres segun el juego
@@ -148,6 +150,9 @@
 
 	// muestra datos relevantes el juego y nivel
 	void mostrar_datos(juego_t juego);
+
+	// calcula la distancia manhatan entre dos coordenadas validas
+	int dist_manhattan( coordenada_t p1, coordenada_t p2 );
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR DE JUEGO ----- (!)
@@ -237,26 +242,35 @@
 	}
 	
 	void jugar_turno(juego_t* juego){
-
-		char mapa2[MAX_FILAS][MAX_COLUMNAS];
-		cargar_mapa( mapa2, juego->nivel);
 	
+		char reg_ena[MAX_LOG],reg_elf[MAX_LOG],reg_orc[MAX_LOG];
+		strcpy(reg_ena," Atacan los enanos \n > \n Eliminados 0 \n");
+		strcpy(reg_elf," Atacan los elfos \n > \n Eliminados 0 \n");
+		strcpy(reg_orc," Se mueven los orcos.");
+
 		int* mapa[MAX_FILAS][MAX_COLUMNAS];
-		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );
+		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );			
 
-		mostrar_juego( *juego);
-
-		jugar_turno_enanos( juego , mapa);
-		detener_el_tiempo( INTERVALO );
-		mostrar_juego( *juego);
-
-		jugar_turno_elfos ( juego , mapa2);
-		detener_el_tiempo( INTERVALO );
-		mostrar_juego( *juego);
-
-		jugar_turno_orcos ( juego );
-		detener_el_tiempo( INTERVALO );
-		mostrar_juego( *juego);
+		jugar_turno_enanos( juego , mapa, reg_ena);
+		if( MOSTRAR_LOG ){
+			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
+			detener_el_tiempo( INTERVALO );
+			mostrar_juego( *juego);
+		}
+		
+		jugar_turno_elfos ( juego , mapa, reg_elf);
+		if( MOSTRAR_LOG ){
+			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
+			detener_el_tiempo( INTERVALO );
+			mostrar_juego( *juego);
+		}
+		
+		jugar_turno_orcos ( juego , reg_orc);
+		if( MOSTRAR_LOG ){
+			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
+			mostrar_juego( *juego);
+			detener_el_tiempo( INTERVALO );
+		}
 	
 		// FIN
 		if( juego->torres.resistencia_torre_1 < 0 )
@@ -322,14 +336,15 @@
 		return nuevo_defensor;
 	}
 
-	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS]){
+	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]){
 
 		int i,j,k;
 		coordenada_t pos, pos_atk;
 		bool atacar;
 		int eliminados = 0;
 
-		char str[100]="";
+		strcpy(registro," Atacan los enanos \n > ");
+		char aux[MIN_LOG]="";
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
@@ -347,22 +362,25 @@
 						pos_atk.col = j;
 
 						if( coordenada_valida(pos_atk) && atacar ){
-							if( (mapa[i][j] != NULL) && ( *(mapa[i][j])!=0 ) ){
+							if( (mapa[i][j] != NULL) && ( *(mapa[i][j]) > 0 ) ){
 
 								if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
 
 									*(mapa[i][j]) -= juego->nivel.defensores[k].fuerza_ataque;
 
 									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
-										*(mapa[i][j]) -= CRITICO_ENA*122;
-										strcat(str," crit");
+										*(mapa[i][j]) -= CRITICO_ENA;
+										strcat(registro," crit");
 									}else
-										strcat(str," hit");
+										strcat(registro," hit");
 
 									if( *(mapa[i][j]) < 1 )
 										eliminados ++ ;
 								}else
-									strcat(str," fail");
+									strcat(registro," fail");
+
+								sprintf(aux,"(%i,%i)",i,j );
+								strcat(registro,aux);
 
 								atacar = false;
 							}
@@ -375,19 +393,78 @@
 
 		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
-		if(MOSTRAR_LOG)
-			printf("Atacan los enanos \n > %s\n Eliminados: %i \n",str,eliminados );
+		sprintf(aux,"\n Eliminados: %i \n",eliminados );
+		strcat(registro,aux);
 
 		return;
 	}
 
-	void jugar_turno_elfos (juego_t* juego, char mapa[MAX_FILAS][MAX_COLUMNAS]){
+	void jugar_turno_elfos (juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]){
+		
+		int i,j,k;
+		coordenada_t pos, pos_atk;
+		bool atacar;
+		int eliminados = 0;
+
+		strcpy(registro," Atacan los elfos \n > ");
+		char aux[MIN_LOG]="";
+
+		int prob_crit = juego->critico_legolas;
+		int prob_fail = juego->fallo_legolas;
+
+		for( k=0 ; k < juego->nivel.tope_defensores ; k++){
+
+			atacar = true;
+
+			if( juego->nivel.defensores[k].tipo == ELFO  ){
+				pos = juego->nivel.defensores[k].posicion;
+
+				for( i = (pos.fil - RNG_ENA ); i <= (pos.fil + RNG_ELF ); i++ ){
+					for( j = (pos.col - RNG_ENA ); j <= (pos.col + RNG_ELF ); j++ ){
+						pos_atk.fil = i;
+						pos_atk.col = j;
+
+						if( coordenada_valida(pos_atk) && atacar && (dist_manhattan(pos,pos_atk) <= RNG_ELF)  ){
+							if( (mapa[i][j] != NULL) && ( *(mapa[i][j]) > 0 ) ){
+
+								if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+
+									*(mapa[i][j]) -= juego->nivel.defensores[k].fuerza_ataque;
+
+									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+										*(mapa[i][j]) -= CRITICO_ELF;
+										strcat(registro," crit");
+									}else
+										strcat(registro," hit");
+
+									if( *(mapa[i][j]) < 1 )
+										eliminados ++ ;
+								}else
+									strcat(registro," fail");
+
+								sprintf(aux,"(%i,%i)",i,j );
+								strcat(registro,aux);
+							}
+						}
+					}
+				}
+
+			}
+		}
+
+		(juego->nivel.max_enemigos_nivel)-= eliminados ;
+
+		sprintf(aux,"\n Eliminados: %i \n",eliminados );
+		strcat(registro,aux);
+
 		return;
 	}
 
-	void jugar_turno_orcos (juego_t* juego){
+	void jugar_turno_orcos (juego_t* juego, char registro[MAX_LOG]){
 		int i;
 		bool mover_1, mover_2;
+
+		strcpy(registro, " Se mueven los orcos");
 	
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
@@ -403,10 +480,12 @@
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
+							strcat(registro, ". La Torre 1 ha sido atacada");
 					}else if( (juego->nivel.enemigos[i].camino == 2) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
 							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
+							strcat(registro, ". La Torre 2 ha sido atacada");
 					}
 				}
 				else if( mover_1 ){
@@ -574,15 +653,15 @@
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ORCO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], ":(");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], " O");
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ELFO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "{L");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], " L");
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ENANO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "TG");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], " G");
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = TORRE;
@@ -659,5 +738,15 @@
 		}
 	
 		return dimension+1;
+	}
+
+	int dist_manhattan( coordenada_t p1, coordenada_t p2 ){
+
+		int delta_fil = p1.fil - p2.fil;
+		delta_fil = (delta_fil > 0)? delta_fil : - delta_fil;
+		int delta_col = p1.col - p2.col;
+		delta_col = (delta_col > 0)? delta_col : - delta_col;
+
+		return delta_fil + delta_col;
 	}
 //----- MOTOR GRAFICO ----- (¡)

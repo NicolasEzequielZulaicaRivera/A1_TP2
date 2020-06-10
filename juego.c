@@ -128,7 +128,7 @@
     };
 
     const config_t CONFIG_DEBUG ={
-        .velocidad = 0.1f,
+        .velocidad = 0.5f,
         .bonus_resistencia = 50000,
         .saltear_niveles = true, .godmode = true
     };
@@ -292,7 +292,7 @@ int main(){
         printf("-------------         OPCIONES         -------------\n");
         printf("----------------------------------------------------\n");
         printf("\n");
-        printf("1: Velocidad - [FRECUENCIA : %f] \n",config->velocidad);
+        printf("1: Tiempo entre turnos - [ESPERA : %f] \n",config->velocidad);
         printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
         printf("3: Revivir a Sauron \n");
         printf("4: Volver \n");
@@ -349,9 +349,7 @@ int main(){
 
                 jugar_turno( juego );
 
-                // Si no se muestra en 
-                //mostrar_juego( *juego );
-                //detener_el_tiempo( config.velocidad );
+                detener_el_tiempo( config.velocidad );
 
             }
 
