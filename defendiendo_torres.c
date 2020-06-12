@@ -190,7 +190,9 @@
 	
 		if( (juego.torres.resistencia_torre_1 == 0) || (juego.torres.resistencia_torre_2 == 0) )
 			estado_juego = ESTADO_PERDIDO;
-		else if(juego.nivel_actual > CANTIDAD_NIVELES)
+		else if( (juego.nivel_actual > CANTIDAD_NIVELES) || 
+				 (juego.nivel_actual == CANTIDAD_NIVELES && estado_nivel(juego.nivel)==ESTADO_GANADO) 
+				)
 			estado_juego = ESTADO_GANADO;
 	
 		return estado_juego;
@@ -481,11 +483,13 @@
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
 							strcat(registro, ". La Torre 1 ha sido atacada");
+							juego->nivel.max_enemigos_nivel--;
 					}else if( (juego->nivel.enemigos[i].camino == 2) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
 							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
 							strcat(registro, ". La Torre 2 ha sido atacada");
+							juego->nivel.max_enemigos_nivel--;
 					}
 				}
 				else if( mover_1 ){
