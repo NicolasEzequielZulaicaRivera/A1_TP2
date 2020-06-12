@@ -351,6 +351,8 @@ int main(){
 
                 detener_el_tiempo( config.velocidad );
 
+                mostrar_juego( *juego );
+
             }
 
             if(config.godmode){
@@ -377,7 +379,6 @@ int main(){
                 juego->nivel.tope_enemigos = 0;
          
         }
-
     }
 
     void mensaje_nuevo_nivel( int nivel ){

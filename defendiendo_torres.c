@@ -44,6 +44,7 @@
 	 * Busca el sprite que corresponde a un indice determinado
 	 * > devuelve el ultimo sprite que se corresponda si hay
 	 * > devuelve un sprite vacio si no hay
+	 * - Estan hardcodeados en la funcion pero deberian salir de un archivo
 	 */
 	void buscar_sprite( sprite_map_t sprite_map, char indice , sprite_t* sprite);
 	
@@ -63,8 +64,6 @@
 	// Hubiera usado 2 librerias
 	// #include "motor_grafico.h"
 	
-	static const float INTERVALO = 0.2f;
-	static const bool MOSTRAR_LOG = true;
 	#define MAX_LOG 500
 	#define MIN_LOG 50
 
@@ -254,31 +253,19 @@
 		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );			
 
 		jugar_turno_enanos( juego , mapa, reg_ena);
-		if( MOSTRAR_LOG ){
-			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
-			detener_el_tiempo( INTERVALO );
-			mostrar_juego( *juego);
-		}
 		
 		jugar_turno_elfos ( juego , mapa, reg_elf);
-		if( MOSTRAR_LOG ){
-			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
-			detener_el_tiempo( INTERVALO );
-			mostrar_juego( *juego);
-		}
 		
 		jugar_turno_orcos ( juego , reg_orc);
-		if( MOSTRAR_LOG ){
-			printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
-			mostrar_juego( *juego);
-			detener_el_tiempo( INTERVALO );
-		}
-	
+		
 		// FIN
 		if( juego->torres.resistencia_torre_1 < 0 )
 			juego->torres.resistencia_torre_1 = 0;
 		if( juego->torres.resistencia_torre_2 < 0 )
 			juego->torres.resistencia_torre_2 = 0;
+
+		// MOSTRAR REGISTRO DE ATAQUES
+		printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
 	}
 
 	void mostrar_juego(juego_t juego){
