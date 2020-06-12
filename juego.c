@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
+#include <string.h>
 #include <stdbool.h>
 #include "animos.h"
 #include "defendiendo_torres.h"
@@ -17,11 +18,15 @@
     static const int INVALIDO =-1;
 
     static const char CONFIRMAR ='S';
+    static const char CANCELAR ='X';
 
     #define CANTIDAD_NIVELES  4
 
-    static const int RES_ORCO  = 200;//200
-    static const int RES_ORCO_RAND  = 100;//100
+    static const int RES_ORCO  = 200;
+    static const int RES_ORCO_RAND  = 100;
+
+    static const int COSTO_ENA_EXT = 50;
+    static const int COSTO_ELF_EXT = 50;
 
     typedef struct config_nivel{
         int num;
@@ -119,18 +124,21 @@
         float velocidad;
         int bonus_resistencia;
         bool saltear_niveles, godmode;
+        bool auto_defensores;
     } config_t;
 
     const config_t CONFIG_STD ={
         .velocidad = 0.4f,
         .bonus_resistencia = 0,
-        .saltear_niveles = false, .godmode = false
+        .saltear_niveles = false, .godmode = false,
+        .auto_defensores = false
     };
 
     const config_t CONFIG_DEBUG ={
-        .velocidad = 0.5f,
-        .bonus_resistencia = 50000,
-        .saltear_niveles = true, .godmode = true
+        .velocidad = 0.1f,
+        .bonus_resistencia = 0,
+        .saltear_niveles = true, .godmode = true,
+        .auto_defensores = true
     };
 
     // muestra opciones/configuracion
@@ -160,8 +168,14 @@
     // Muestra un mensaje al pasar de nivel
     void mensaje_nuevo_nivel( int nivel );
 
-    // Pide al usurio que coloque defensores segun las especificaciones del nivel
+    // Pide al usuario que coloque defensores segun las especificaciones del nivel
     void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  );
+
+    // Coloqua defensores segun las especificaciones del nivel
+    void auto_agregar_defensores( juego_t* juego, config_nivel_t config_nivel  );
+
+    // Pide al usuario que coloque un defensor extra segun las especificaciones del nivel
+    void agregar_defensores_bonus( juego_t* juego, config_nivel_t config_nivel  );
 
     // Devuelve las especificaciones del nivel pedido
     config_nivel_t buscar_config_nivel( int nivel );
@@ -327,6 +341,8 @@ int main(){
 
     void nuevo_juego( juego_t* juego , config_t config ){
 
+        int turno = 0;
+        config_nivel_t config_nivel;
         juego->nivel_actual = 0;
         juego->nivel.tope_enemigos = 0;
 
@@ -335,6 +351,8 @@ int main(){
             if( estado_nivel( juego->nivel ) == ESTADO_GANADO  ){
                 
                 juego->nivel_actual ++;
+                config_nivel = buscar_config_nivel( juego->nivel_actual );
+                turno = 1;
                 juego->nivel = nuevo_nivel( juego->nivel_actual );
                 mensaje_nuevo_nivel( juego->nivel_actual );
 
@@ -342,12 +360,19 @@ int main(){
 
                 if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.tope_enemigos > 0) ){
 
-                    agregar_defensores( juego, buscar_config_nivel( juego->nivel_actual ) );
+                    if( config.auto_defensores )
+                        auto_agregar_defensores( juego, config_nivel );
+                    else
+                        agregar_defensores( juego, config_nivel );
                 }
 
             }else{
 
+                if( (turno % config_nivel.turnos_bonus == 0) && !(config.auto_defensores) )
+                    agregar_defensores_bonus( juego, config_nivel );
+
                 jugar_turno( juego );
+                turno ++;
 
                 detener_el_tiempo( config.velocidad );
 
@@ -410,24 +435,7 @@ int main(){
         config_nivel_t config;
         config.num = 0;
 
-        switch( nivel ){
-
-            case 1:
-                config = NIVEL_1;
-            break;
-
-            case 2:
-                config = NIVEL_2;
-            break;
-
-            case 3:
-                config = NIVEL_3;
-            break;
-
-            case 4:
-                config = NIVEL_4;
-            break;
-        }
+        config = buscar_config_nivel( nivel );
 
         
         if( nivel <= CANTIDAD_NIVELES ){
@@ -550,9 +558,12 @@ int main(){
         int col, fil, i;
         char msg [MAX_MSG];
         coordenada_t posicion;
+        char estado;
         
         // ENANOS
-        for( i=0; i<config_nivel.enanos; i++){
+        i=0;
+        while( i<config_nivel.enanos ){
+
             do{
                 mostrar_juego(*juego);
                 printf("\n COLOCAR DEFENSORES \n");
@@ -567,10 +578,21 @@ int main(){
                 posicion.col = col;
 
             } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
+            i++;
+            mostrar_juego(*juego);
+        
+            printf(" \n CANCELAR > [%c] ",CANCELAR);
+            scanf("%c%c",&estado,&estado);
+            if(toupper(estado) == toupper(CANCELAR)){
+                i--;
+                juego->nivel.tope_defensores --;
+            }
+            
         }
 
         // ELFOS
-        for( i=0; i<config_nivel.elfos; i++){
+        i=0;
+        while( i<config_nivel.elfos){
             do{
                 mostrar_juego(*juego);
                 printf("\n COLOCAR DEFENSORES \n");
@@ -585,8 +607,139 @@ int main(){
                 posicion.col = col;
 
             } while ( agregar_defensor( &(juego->nivel), posicion, ELFO) == INVALIDO );
-        }
+            i++;
+            mostrar_juego(*juego);
+
+            printf(" \n CANCELAR > [%c] ",CANCELAR);
+            scanf("%c%c",&estado,&estado);
+            if(toupper(estado) == toupper(CANCELAR)){
+                i--;
+                juego->nivel.tope_defensores --;
+            }
+        }    
+    }
+
+    void auto_agregar_defensores( juego_t* juego, config_nivel_t config_nivel  ){
+
+        int col, fil, i;
+        coordenada_t posicion;
         
+        // ENANOS
+        i=0;
+        while( i<config_nivel.enanos ){
+
+            do{
+                fil = rand()%config_nivel.dimension-1;
+                col = rand()%config_nivel.dimension-1;
+                posicion.fil = fil;
+                posicion.col = col;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
+            i++;
+        }
+
+        // ELFOS
+        i=0;
+        while( i<config_nivel.elfos){
+            do{
+                fil = rand()%config_nivel.dimension-1;
+                col = rand()%config_nivel.dimension-1;
+                posicion.fil = fil;
+                posicion.col = col;
+            } while ( agregar_defensor( &(juego->nivel), posicion, ELFO) == INVALIDO );
+            i++;
+            mostrar_juego(*juego);
+        }    
+    }
+
+    void agregar_defensores_bonus( juego_t* juego, config_nivel_t config_nivel  ){
+
+        int col, fil;
+        char msg [MAX_MSG];
+        coordenada_t posicion;
+        char tipo, estado;
+        bool enanos,elfos;
+
+        char opciones [MAX_OPT];
+        char nombre_opciones [MAX_OPT][MAX_MSG];
+        int tope;
+
+        enanos = ( config_nivel.torre_1 && 
+            juego->torres.enanos_extra > 0);
+
+        elfos = ( config_nivel.torre_2 && 
+            juego->torres.elfos_extra > 0);
+
+        if( !enanos && !elfos )
+            return;
+
+        mostrar_juego(*juego);
+        printf("\n PUEDE COLOCAR UN DEFENSOR EXTRA \n");
+        printf(" COSTO: ");
+        if(enanos)
+            printf(" Enanos: %i Hp de la torre 1 .",COSTO_ENA_EXT);
+        if(elfos)
+            printf(" Elfo: %i Hp de la torre 2 .",COSTO_ELF_EXT);
+        printf("\n\n");
+
+        opciones[0] = CANCELAR;
+        strcpy(nombre_opciones[0], "CANCELAR");
+        if( enanos && elfos ){
+            opciones[1] = ENANO;
+            strcpy(nombre_opciones[1],"ENANO");
+            opciones[2] = ELFO;
+            strcpy(nombre_opciones[2], "ELFO");
+            tope = 3;
+        }else if( enanos ){
+            opciones[1] = ENANO;
+            strcpy(nombre_opciones[1], "ENANO");
+            tope = 2;
+        }else if( elfos ){
+            opciones[1] = ELFO;
+            strcpy(nombre_opciones[1], "ELFO");
+            tope = 2;
+        }else
+            return;
+
+        sprintf(msg," Que defensor desea colocar ?");
+        pedir_char( &tipo, opciones, nombre_opciones, tope, msg );      
+        mostrar_juego(*juego);
+
+        if( toupper(tipo) == toupper(ENANO) ){
+            tipo = ENANO;
+            juego->torres.resistencia_torre_1 -= COSTO_ENA_EXT;
+        }
+        else if( toupper(tipo) == toupper(ELFO) ){
+            tipo = ELFO;
+            juego->torres.resistencia_torre_2 -= COSTO_ELF_EXT;
+        }
+        else
+            return;
+
+        do{
+            do{
+                mostrar_juego(*juego);
+                printf("\n COLOCAR DEFENSOR \n");
+                
+                sprintf(msg, "Ingrese la fila del defensor ");
+                pedir_int( &fil, 0, config_nivel.dimension-1,msg);
+                sprintf(msg, "Ingrese la columna del defensor");
+                pedir_int( &col, 0, config_nivel.dimension-1,msg);
+
+                posicion.fil = fil;
+                posicion.col = col;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, tipo) == INVALIDO );
+            mostrar_juego(*juego);
+        
+            printf(" \n CANCELAR > [%c] ",CANCELAR);
+            scanf("%c%c",&estado,&estado);
+            if(toupper(estado) == toupper(CANCELAR)){
+                juego->nivel.tope_defensores --;
+            }
+        }while(toupper(estado) == toupper(CANCELAR));
+
+
     }
 
     config_nivel_t buscar_config_nivel( int nivel ){

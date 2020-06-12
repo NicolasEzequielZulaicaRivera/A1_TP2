@@ -86,8 +86,6 @@
 	static const int RESISTENICA_TORRE_INI = 600;
 	static const int ELFOS_EXTRA_INI  = 10;
 	static const int ENANOS_EXTRA_INI = 10;
-	//static const int COSTO_ELFOS_EXTRA  = 50;
-	//static const int COSTO_ENANOS_EXTRA = 50;
 	
 	static const int ESTADO_JUGANDO = 0;
 	static const int ESTADO_GANADO  = 1;
@@ -127,6 +125,7 @@
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
 
 	// Subprocesos de jugar_turno()
+	// log: Mantengo los strings por que pueden ser utilizados se cambia la estructura juego o nivel
 	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]);
 	void jugar_turno_elfos (juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG] );
 	void jugar_turno_orcos (juego_t* juego, char registro[MAX_LOG] );
@@ -244,10 +243,12 @@
 	
 	void jugar_turno(juego_t* juego){
 	
+		//log/
 		char reg_ena[MAX_LOG],reg_elf[MAX_LOG],reg_orc[MAX_LOG];
 		strcpy(reg_ena," Atacan los enanos \n > \n Eliminados 0 \n");
 		strcpy(reg_elf," Atacan los elfos \n > \n Eliminados 0 \n");
 		strcpy(reg_orc," Se mueven los orcos.");
+		//log/
 
 		int* mapa[MAX_FILAS][MAX_COLUMNAS];
 		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );			
@@ -265,7 +266,7 @@
 			juego->torres.resistencia_torre_2 = 0;
 
 		// MOSTRAR REGISTRO DE ATAQUES
-		printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
+		//log/printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
 	}
 
 	void mostrar_juego(juego_t juego){
@@ -332,8 +333,8 @@
 		bool atacar;
 		int eliminados = 0;
 
-		strcpy(registro," Atacan los enanos \n > ");
-		char aux[MIN_LOG]="";
+		//log/strcpy(registro," Atacan los enanos \n > ");
+		//log/char aux[MIN_LOG]="";
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
@@ -359,17 +360,17 @@
 
 									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
 										*(mapa[i][j]) -= CRITICO_ENA;
-										strcat(registro," crit");
+										//log/strcat(registro," crit");
 									}else
-										strcat(registro," hit");
+										//log/strcat(registro," hit");
 
 									if( *(mapa[i][j]) < 1 )
 										eliminados ++ ;
 								}else
-									strcat(registro," fail");
+									//log/strcat(registro," fail");
 
-								sprintf(aux,"(%i,%i)",i,j );
-								strcat(registro,aux);
+								//log/sprintf(aux,"(%i,%i)",i,j );
+								//log/strcat(registro,aux);
 
 								atacar = false;
 							}
@@ -382,8 +383,8 @@
 
 		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
-		sprintf(aux,"\n Eliminados: %i \n",eliminados );
-		strcat(registro,aux);
+		//log/sprintf(aux,"\n Eliminados: %i \n",eliminados );
+		//log/strcat(registro,aux);
 
 		return;
 	}
@@ -395,8 +396,8 @@
 		bool atacar;
 		int eliminados = 0;
 
-		strcpy(registro," Atacan los elfos \n > ");
-		char aux[MIN_LOG]="";
+		//log/strcpy(registro," Atacan los elfos \n > ");
+		//log/char aux[MIN_LOG]="";
 
 		int prob_crit = juego->critico_legolas;
 		int prob_fail = juego->fallo_legolas;
@@ -422,17 +423,17 @@
 
 									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
 										*(mapa[i][j]) -= CRITICO_ELF;
-										strcat(registro," crit");
+										//log/strcat(registro," crit");
 									}else
-										strcat(registro," hit");
+										//log/strcat(registro," hit");
 
 									if( *(mapa[i][j]) < 1 )
 										eliminados ++ ;
-								}else
-									strcat(registro," fail");
+								}//log/else
+									//log/strcat(registro," fail");
 
-								sprintf(aux,"(%i,%i)",i,j );
-								strcat(registro,aux);
+								//log/sprintf(aux,"(%i,%i)",i,j );
+								//log/strcat(registro,aux);
 							}
 						}
 					}
@@ -443,8 +444,8 @@
 
 		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
-		sprintf(aux,"\n Eliminados: %i \n",eliminados );
-		strcat(registro,aux);
+		//log/sprintf(aux,"\n Eliminados: %i \n",eliminados );
+		//log/strcat(registro,aux);
 
 		return;
 	}
@@ -453,7 +454,7 @@
 		int i;
 		bool mover_1, mover_2;
 
-		strcpy(registro, " Se mueven los orcos");
+		//log/strcpy(registro, " Se mueven los orcos");
 	
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
@@ -469,13 +470,13 @@
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							strcat(registro, ". La Torre 1 ha sido atacada");
+							//log/strcat(registro, ". La Torre 1 ha sido atacada");
 							juego->nivel.max_enemigos_nivel--;
 					}else if( (juego->nivel.enemigos[i].camino == 2) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
 							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							strcat(registro, ". La Torre 2 ha sido atacada");
+							//log/strcat(registro, ". La Torre 2 ha sido atacada");
 							juego->nivel.max_enemigos_nivel--;
 					}
 				}
