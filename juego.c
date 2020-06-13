@@ -84,8 +84,8 @@
     };
 
     const int MAX_INTENTOS = 20;
-    const int COMPLEJIDAD_NIVELES = 2;
-    const int RAREZA_CRUZADO = 2;
+    //const int COMPLEJIDAD_NIVELES = 2;
+    //const int RAREZA_CRUZADO = 2;
 //  CONSTANTES DE JUEGO (¡)
 
 // HEADER DE PEDIR DATOS (!)
@@ -97,6 +97,8 @@
     void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] );
     void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] );
     void pedir_char( char* dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] );
+    
+    void tocar_para_continuar();
 // HEADER DE PEDIR DATOS (¡)
 
 // HEADER DE MENU Y CONFIG (!)
@@ -125,20 +127,23 @@
         int bonus_resistencia;
         bool saltear_niveles, godmode;
         bool auto_defensores;
+        int complejidad, rareza_cruzado;
     } config_t;
 
     const config_t CONFIG_STD ={
         .velocidad = 0.4f,
         .bonus_resistencia = 0,
         .saltear_niveles = false, .godmode = false,
-        .auto_defensores = false
+        .auto_defensores = false,
+        .complejidad = 2, .rareza_cruzado = 2
     };
 
     const config_t CONFIG_DEBUG ={
         .velocidad = 0.1f,
-        .bonus_resistencia = 0,
+        .bonus_resistencia = 3000,
         .saltear_niveles = true, .godmode = true,
-        .auto_defensores = true
+        .auto_defensores = true,
+        .complejidad = 1, .rareza_cruzado = 1
     };
 
     // muestra opciones/configuracion
@@ -163,10 +168,13 @@
      *  3 > Entrada Sur
      *  Default > Nivel vacio
      */
-    nivel_t nuevo_nivel( int nivel );
+    nivel_t nuevo_nivel( int nivel, config_t config );
 
     // Muestra un mensaje al pasar de nivel
     void mensaje_nuevo_nivel( int nivel );
+
+    // Muestra un mensaje al finalizar un juego (ganar o perder)
+    void mensaje_terminar_juego( int estado );
 
     // Pide al usuario que coloque defensores segun las especificaciones del nivel
     void agregar_defensores( juego_t* juego, config_nivel_t config_nivel  );
@@ -274,6 +282,14 @@ int main(){
 
         return;
     }
+
+    void tocar_para_continuar(){
+
+        printf("\n\t presione para continuar \n" );
+        char c;
+        fflush(stdout);
+        scanf("%c%c",&c,&c);
+    }
 // PEDIR DATOS (¡)
 
 // MENU Y CONFIG (!)
@@ -308,22 +324,36 @@ int main(){
         printf("\n");
         printf("1: Tiempo entre turnos - [ESPERA : %f] \n",config->velocidad);
         printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
-        printf("3: Revivir a Sauron \n");
-        printf("4: Volver \n");
+        printf("3: Complejidad de niveles - [COMPLEJIDAD : %i]\n",config->complejidad);
+        printf("4: Rareza de niveles cruzados - [RAREZA : %i]\n",config->rareza_cruzado);
+        printf("5: Revivir a Sauron \n");
+        printf("6: Volver \n");
 
         char input[20];
         scanf("%s",input);
         opcion = input[0]-48;
 
+        char msg[MAX_MSG];
+
         switch( opcion ){
             case 1:
-                printf("Ingrese la FRECUENCIA [ 0.1 - 1.0 ]  > ");
-                scanf("%f", &(config->velocidad) );
+                sprintf(msg," Ingrese la FRECUENCIA");
+                pedir_float( &(config->velocidad), 0.1f, 1.0f, msg );
             break;
 
             case 2:
-                printf("Ingrese el BONUS [ 0 - 1000 ]  > ");
-                scanf("%i", &(config->bonus_resistencia) );
+                sprintf(msg," Ingrese el BONUS");
+                pedir_int( &(config->bonus_resistencia), 0, 9000, msg );
+            break;
+
+            case 3:
+                sprintf(msg,"Ingrese la COMPLEJIDAD");
+                pedir_int( &(config->complejidad), 0, 5, msg );
+            break;
+
+            case 4:
+                sprintf(msg,"Ingrese la RAREZA");
+                pedir_int( &(config->rareza_cruzado), 1, 50, msg );
             break;
         }
         return;
@@ -353,7 +383,7 @@ int main(){
                 juego->nivel_actual ++;
                 config_nivel = buscar_config_nivel( juego->nivel_actual );
                 turno = 1;
-                juego->nivel = nuevo_nivel( juego->nivel_actual );
+                juego->nivel = nuevo_nivel( juego->nivel_actual, config );
                 mensaje_nuevo_nivel( juego->nivel_actual );
 
                 bonus_nuevo_nivel( juego , config );
@@ -384,10 +414,10 @@ int main(){
                 juego->torres.resistencia_torre_1 += 1;
                 juego->torres.resistencia_torre_2 += 1;
             }
-
         }
 
-        // GANO O PERDIO 
+        // GANO O PERDIO
+        mensaje_terminar_juego( estado_juego( *juego) );
     }
 
     void bonus_nuevo_nivel( juego_t* juego , config_t config ){
@@ -416,13 +446,36 @@ int main(){
         if( nivel <= CANTIDAD_NIVELES )
             printf("\n\t COMIENZA EL NIVEL %i \n", nivel );
 
-        printf("\n\t presione para continuar \n" );
-
-        char c;
-        scanf("%c",&c);
+        tocar_para_continuar();
     }
 
-    nivel_t nuevo_nivel( int nivel ){
+    void mensaje_terminar_juego( int estado ){
+
+        system("clear");
+        if( estado == ESTADO_GANADO){
+
+            printf("\n\n");
+            printf("\t =================================== \n");
+            printf("\t ||                               ||\n");
+            printf("\t ||  ¡¡¡ HAS GANADO EL JUEGO !!!  ||\n");
+            printf("\t ||                               ||\n");
+            printf("\t =================================== \n");
+        
+        }else{
+
+            printf("\n\n");
+            printf("\t ==================================== \n");
+            printf("\t ||                                ||\n");
+            printf("\t ||      HAS PERDIDO EL JUEGO      ||\n");
+            printf("\t ||                                ||\n");
+            printf("\t ==================================== \n");
+
+        }
+
+        tocar_para_continuar();
+    } 
+
+    nivel_t nuevo_nivel( int nivel , config_t datos){
 
         int dimension; // mapa de dim x dim
         nivel_t nuevo_nivel;
@@ -442,7 +495,7 @@ int main(){
 
             int intentos;
 
-            bool cruzado = ( rand()%RAREZA_CRUZADO == 0 );
+            bool cruzado = ( rand()%datos.rareza_cruzado == 0 );
             cruzado = true;
 
             dimension = config.dimension ;
@@ -484,7 +537,7 @@ int main(){
                 intentos = 0;
                 nuevo_nivel.tope_camino_1 = 0;
 
-                while( (nuevo_nivel.tope_camino_1 < COMPLEJIDAD_NIVELES *dimension) 
+                while( (nuevo_nivel.tope_camino_1 < datos.complejidad *dimension) 
                     && (intentos < MAX_INTENTOS) ){
 
                     obtener_camino(
@@ -529,7 +582,7 @@ int main(){
                 intentos = 0;
                 nuevo_nivel.tope_camino_2 = 0;
 
-                while( (nuevo_nivel.tope_camino_2 < COMPLEJIDAD_NIVELES*dimension) 
+                while( (nuevo_nivel.tope_camino_2 < datos.complejidad*dimension) 
                     && (intentos < MAX_INTENTOS) ){
 
                     obtener_camino(
@@ -738,8 +791,6 @@ int main(){
                 juego->nivel.tope_defensores --;
             }
         }while(toupper(estado) == toupper(CANCELAR));
-
-
     }
 
     config_nivel_t buscar_config_nivel( int nivel ){

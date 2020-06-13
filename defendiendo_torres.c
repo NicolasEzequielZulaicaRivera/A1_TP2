@@ -8,9 +8,11 @@
 	static const char ANIMO_REGULAR = 'R';
 	static const char ANIMO_MALO    = 'M';
 	static const char VACIO  = ' ';
+	static const char FIL_PAR  = 'f';
+	static const char COL_PAR  = 'c';
 	static const char CAMINO = '#';
-	static const char CAMINO_1 = '!';
-	static const char CAMINO_2 = '"';
+	static const char CAMINO_1 = '[';
+	static const char CAMINO_2 = '(';
 	static const char TORRE   = 'T';
 	static const char TORRE_1 = '1';
 	static const char TORRE_2 = '2';
@@ -361,12 +363,12 @@
 									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
 										*(mapa[i][j]) -= CRITICO_ENA;
 										//log/strcat(registro," crit");
-									}else
+									}//log/else
 										//log/strcat(registro," hit");
 
 									if( *(mapa[i][j]) < 1 )
 										eliminados ++ ;
-								}else
+								}//log/else
 									//log/strcat(registro," fail");
 
 								//log/sprintf(aux,"(%i,%i)",i,j );
@@ -424,7 +426,7 @@
 									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
 										*(mapa[i][j]) -= CRITICO_ELF;
 										//log/strcat(registro," crit");
-									}else
+									}//log/else
 										//log/strcat(registro," hit");
 
 									if( *(mapa[i][j]) < 1 )
@@ -499,12 +501,20 @@
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
 	
 		int i, j, k;
-		//int dim = dimension(nivel);
+		
 		// coordenada_t pos; // asignacion defectuosa ? <- 2020/6/7 22:20 - No recibia fil y col correctas => se uso i,j
 		for (i = 0; i < MAX_FILAS; i++)
 			for( j = 0; j < MAX_COLUMNAS; j++ )
 				mapa[i][j] = VACIO;
-	
+
+		// TABLA
+		for (i = 1; i < MAX_FILAS; i=i+2)
+			for( j = 0; j < MAX_COLUMNAS; j++ )
+				mapa[i][j] = FIL_PAR;
+		for (i = 0; i < MAX_FILAS; i=i+2)
+			for( j = 1; j < MAX_COLUMNAS; j=j+2 )
+				mapa[i][j] = COL_PAR;
+
 		// CAMINO 1
 		for ( k = 0; k < nivel.tope_camino_1 ; k++)
 			mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO_1;
@@ -614,24 +624,40 @@
 			espacio_blanco[i]=' ';
 		espacio_blanco[i]='\0';
 	
-		printf("\n    ");
+		printf("\n|==||");
 		for(j=0 ; j < dimension; j++){
 			printf("%s", espacio_blanco);
 			if( j < 10 )
 				printf("0");
 			printf("%i|", j);
 		}
+		printf("|==|");
 		for (i = 0; i < dimension; i++)
 		{
-			printf("\n");
+			printf("\n|");
 			if( i < 10 )
 				printf("0");
 			printf("%i| ",i);
+
 			for( j = 0; j < dimension; j++ ){
 				buscar_sprite( sprite_map ,mapa[i][j], &sprite);
 				printf("%s ",sprite);
 			}
+
+			printf("|");
+			if( i < 10 )
+				printf("0");
+			printf("%i| ",i);
 		}
+
+		printf("\n|==||");
+		for(j=0 ; j < dimension; j++){
+			printf("%s", espacio_blanco);
+			if( j < 10 )
+				printf("0");
+			printf("%i|", j);
+		}
+		printf("|==|");
 		printf("\n\n");
 	}
 	
@@ -680,6 +706,14 @@
 		(sprite_map->tope)++;
 		sprite_map->indice [ sprite_map->tope ] = CAMINO_2;
 		strcpy(sprite_map->sprites[ sprite_map->tope ], "()");
+		(sprite_map->tope)++;
+
+		sprite_map->indice [ sprite_map->tope ] = FIL_PAR;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "__");
+		(sprite_map->tope)++;
+
+		sprite_map->indice [ sprite_map->tope ] = COL_PAR;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], "  ");
 		(sprite_map->tope)++;
 	}
 	
