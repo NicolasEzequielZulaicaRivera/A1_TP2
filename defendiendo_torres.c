@@ -13,6 +13,7 @@
 	static const char CAMINO = '#';
 	static const char CAMINO_1 = '[';
 	static const char CAMINO_2 = '(';
+	static const char CAMINO_3 = '{';
 	static const char TORRE   = 'T';
 	static const char TORRE_1 = '1';
 	static const char TORRE_2 = '2';
@@ -127,10 +128,13 @@
 	defensor_t nuevo_defensor( char tipo, coordenada_t posicion );
 
 	// Subprocesos de jugar_turno()
-	// log: Mantengo los strings por que pueden ser utilizados se cambia la estructura juego o nivel
-	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]);
-	void jugar_turno_elfos (juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG] );
-	void jugar_turno_orcos (juego_t* juego, char registro[MAX_LOG] );
+	void jugar_turno_enanos(juego_t* juego);
+	void jugar_turno_elfos (juego_t* juego);
+	void jugar_turno_orcos (juego_t* juego);
+
+	// Calcula si un enemigo esta en rango de un enano/elfo
+	bool en_rango_ena( coordenada_t pos, coordenada_t enemigo );
+	bool en_rango_elf( coordenada_t pos, coordenada_t enemigo );
 
 	/*
 	 * Carga un mapa de caracteres segun el juego
@@ -138,21 +142,11 @@
 	 */
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel);
 
-	/*
-	 * Carga un mapa con referenias a los enemigos segun el juego
-	 * pre: reccibe un nivel valido
-	 */
-	void cargar_mapa_res_enemigos( int* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t* nivel);
-
 	// Compara si una coordenada esta dentro de los limites del mapa
 	bool coordenada_valida( coordenada_t coordenada );
 
-
 	// muestra datos relevantes el juego y nivel
 	void mostrar_datos(juego_t juego);
-
-	// calcula la distancia manhatan entre dos coordenadas validas
-	int dist_manhattan( coordenada_t p1, coordenada_t p2 );
 //----- HEADER MOTOR DE JUEGO ----- (¡)
 
 //----- MOTOR DE JUEGO ----- (!)
@@ -244,31 +238,18 @@
 	}
 	
 	void jugar_turno(juego_t* juego){
-	
-		//log/
-		char reg_ena[MAX_LOG],reg_elf[MAX_LOG],reg_orc[MAX_LOG];
-		strcpy(reg_ena," Atacan los enanos \n > \n Eliminados 0 \n");
-		strcpy(reg_elf," Atacan los elfos \n > \n Eliminados 0 \n");
-		strcpy(reg_orc," Se mueven los orcos.");
-		//log/
 
-		int* mapa[MAX_FILAS][MAX_COLUMNAS];
-		cargar_mapa_res_enemigos( mapa, &(juego->nivel) );			
-
-		jugar_turno_enanos( juego , mapa, reg_ena);
+		jugar_turno_enanos( juego );
 		
-		jugar_turno_elfos ( juego , mapa, reg_elf);
+		jugar_turno_elfos ( juego );
 		
-		jugar_turno_orcos ( juego , reg_orc);
+		jugar_turno_orcos ( juego );
 		
 		// FIN
 		if( juego->torres.resistencia_torre_1 < 0 )
 			juego->torres.resistencia_torre_1 = 0;
 		if( juego->torres.resistencia_torre_2 < 0 )
 			juego->torres.resistencia_torre_2 = 0;
-
-		// MOSTRAR REGISTRO DE ATAQUES
-		//log/printf("%s\n\n%s\n%s\n",reg_orc,reg_elf,reg_ena );
 	}
 
 	void mostrar_juego(juego_t juego){
@@ -328,18 +309,17 @@
 		return nuevo_defensor;
 	}
 
-	void jugar_turno_enanos(juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]){
+	void jugar_turno_enanos(juego_t* juego){
 
-		int i,j,k;
+		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
 		int eliminados = 0;
 
-		//log/strcpy(registro," Atacan los enanos \n > ");
-		//log/char aux[MIN_LOG]="";
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
+
 
 		for( k=0 ; k < juego->nivel.tope_defensores ; k++){
 
@@ -348,58 +328,70 @@
 			if( juego->nivel.defensores[k].tipo == ENANO  ){
 				pos = juego->nivel.defensores[k].posicion;
 
-				for( i = (pos.fil - RNG_ENA ); i <= (pos.fil + RNG_ENA ); i++ ){
-					for( j = (pos.col - RNG_ENA ); j <= (pos.col + RNG_ENA ); j++ ){
-						pos_atk.fil = i;
-						pos_atk.col = j;
+				for( m = 0; m < juego->nivel.tope_enemigos; m++ ){
 
-						if( coordenada_valida(pos_atk) && atacar ){
-							if( (mapa[i][j] != NULL) && ( *(mapa[i][j]) > 0 ) ){
+					pos_atk.fil = pos_atk.col = INVALIDO;
+					if( juego->nivel.enemigos[m].camino == 1 )
+						pos_atk = juego->nivel.camino_1[ juego->nivel.enemigos[m].pos_en_camino ];
+					if( juego->nivel.enemigos[m].camino == 2 )
+						pos_atk = juego->nivel.camino_2[ juego->nivel.enemigos[m].pos_en_camino ];
 
-								if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+					if( 
+						atacar &&
+						(juego->nivel.enemigos[m].vida > 0) &&
+						en_rango_ena(pos,pos_atk)
+					){
+					
+						if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
 
-									*(mapa[i][j]) -= juego->nivel.defensores[k].fuerza_ataque;
+							juego->nivel.enemigos[m].vida -=
+								juego->nivel.defensores[k].fuerza_ataque;
 
-									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
-										*(mapa[i][j]) -= CRITICO_ENA;
-										//log/strcat(registro," crit");
-									}//log/else
-										//log/strcat(registro," hit");
+							if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+									juego->nivel.enemigos[m].vida -= 
+										CRITICO_ENA;
+								}
 
-									if( *(mapa[i][j]) < 1 )
-										eliminados ++ ;
-								}//log/else
-									//log/strcat(registro," fail");
-
-								//log/sprintf(aux,"(%i,%i)",i,j );
-								//log/strcat(registro,aux);
-
-								atacar = false;
-							}
+							if( juego->nivel.enemigos[m].vida < 1 )
+									eliminados ++ ;
 						}
+
+						atacar = false;
 					}
 				}
-
 			}
 		}
 
-		(juego->nivel.max_enemigos_nivel)-= eliminados ;
+		if(coordenada_valida(pos_atk) && atacar && coordenada_valida(pos)){};
 
-		//log/sprintf(aux,"\n Eliminados: %i \n",eliminados );
-		//log/strcat(registro,aux);
+		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
 		return;
 	}
 
-	void jugar_turno_elfos (juego_t* juego, int* mapa[MAX_FILAS][MAX_COLUMNAS], char registro[MAX_LOG]){
+	bool en_rango_ena( coordenada_t pos, coordenada_t enemigo ){
+
+		if( !coordenada_valida(pos) || !coordenada_valida(enemigo) )
+			return false;
+
+		int dfil,dcol;
+		dfil = pos.fil - enemigo.fil;
+		dcol = pos.col - enemigo.col;
+		if( dfil < 0 ) dfil *= -1;
+		if( dcol < 0 ) dcol *= -1;
+
+		if( (dfil > RNG_ENA) || (dcol > RNG_ENA) )
+			return false;
+
+		return true;
+	}
+
+	void jugar_turno_elfos (juego_t* juego){
 		
-		int i,j,k;
+		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
 		int eliminados = 0;
-
-		//log/strcpy(registro," Atacan los elfos \n > ");
-		//log/char aux[MIN_LOG]="";
 
 		int prob_crit = juego->critico_legolas;
 		int prob_fail = juego->fallo_legolas;
@@ -408,55 +400,68 @@
 
 			atacar = true;
 
+			
 			if( juego->nivel.defensores[k].tipo == ELFO  ){
 				pos = juego->nivel.defensores[k].posicion;
 
-				for( i = (pos.fil - RNG_ENA ); i <= (pos.fil + RNG_ELF ); i++ ){
-					for( j = (pos.col - RNG_ENA ); j <= (pos.col + RNG_ELF ); j++ ){
-						pos_atk.fil = i;
-						pos_atk.col = j;
+				for( m = 0; m < juego->nivel.tope_enemigos; m++ ){
 
-						if( coordenada_valida(pos_atk) && atacar && (dist_manhattan(pos,pos_atk) <= RNG_ELF)  ){
-							if( (mapa[i][j] != NULL) && ( *(mapa[i][j]) > 0 ) ){
+					pos_atk.fil = pos_atk.col = INVALIDO;
+					if( juego->nivel.enemigos[m].camino == 1 )
+						pos_atk = juego->nivel.camino_1[ juego->nivel.enemigos[m].pos_en_camino ];
+					if( juego->nivel.enemigos[m].camino == 2 )
+						pos_atk = juego->nivel.camino_2[ juego->nivel.enemigos[m].pos_en_camino ];
 
-								if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+					if( 
+						atacar &&
+						(juego->nivel.enemigos[m].vida > 0) &&
+						en_rango_elf(pos,pos_atk)
+					){
+					
+						if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
 
-									*(mapa[i][j]) -= juego->nivel.defensores[k].fuerza_ataque;
+							juego->nivel.enemigos[m].vida -=
+								juego->nivel.defensores[k].fuerza_ataque;
 
-									if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
-										*(mapa[i][j]) -= CRITICO_ELF;
-										//log/strcat(registro," crit");
-									}//log/else
-										//log/strcat(registro," hit");
+							if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+									juego->nivel.enemigos[m].vida -= 
+										CRITICO_ELF;
+								}
 
-									if( *(mapa[i][j]) < 1 )
-										eliminados ++ ;
-								}//log/else
-									//log/strcat(registro," fail");
-
-								//log/sprintf(aux,"(%i,%i)",i,j );
-								//log/strcat(registro,aux);
-							}
+							if( juego->nivel.enemigos[m].vida < 1 )
+									eliminados ++ ;
 						}
+
 					}
 				}
-
 			}
 		}
 
 		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
-		//log/sprintf(aux,"\n Eliminados: %i \n",eliminados );
-		//log/strcat(registro,aux);
-
 		return;
 	}
 
-	void jugar_turno_orcos (juego_t* juego, char registro[MAX_LOG]){
+	bool en_rango_elf( coordenada_t pos, coordenada_t enemigo ){
+
+		if( !coordenada_valida(pos) || !coordenada_valida(enemigo) )
+			return false;
+
+		int dfil,dcol;
+		dfil = pos.fil - enemigo.fil;
+		dcol = pos.col - enemigo.col;
+		if( dfil < 0 ) dfil *= -1;
+		if( dcol < 0 ) dcol *= -1;
+
+		if( (dfil + dcol) > RNG_ELF )
+			return false;
+
+		return true;
+	}
+
+	void jugar_turno_orcos (juego_t* juego){
 		int i;
 		bool mover_1, mover_2;
-
-		//log/strcpy(registro, " Se mueven los orcos");
 	
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
@@ -472,13 +477,11 @@
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							//log/strcat(registro, ". La Torre 1 ha sido atacada");
 							juego->nivel.max_enemigos_nivel--;
 					}else if( (juego->nivel.enemigos[i].camino == 2) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
 							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							//log/strcat(registro, ". La Torre 2 ha sido atacada");
 							juego->nivel.max_enemigos_nivel--;
 					}
 				}
@@ -520,8 +523,12 @@
 			mapa[ nivel.camino_1[k].fil ][ nivel.camino_1[k].col ] = CAMINO_1;
 
 		// CAMINO 2
-		for ( k = 0; k < nivel.tope_camino_2 ; k++)
-			mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO_2;
+		for ( k = 0; k < nivel.tope_camino_2 ; k++){
+			if( mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] == CAMINO_1 )
+				mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO_3;
+			else
+				mapa[ nivel.camino_2[k].fil ][ nivel.camino_2[k].col ] = CAMINO_2;
+		}
 
 		// ENTRADA Y TORRE  1
 		if( nivel.tope_camino_1 > 2){
@@ -564,36 +571,6 @@
 			j = nivel.defensores[k].posicion.col;
 			mapa[i][j] = nivel.defensores[k].tipo;
 		}
-	}
-
-	void cargar_mapa_res_enemigos( int* mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t* nivel){
-
-		// Copia del de arriba, sin verificar, pero parece funcionar ::shipit::
-
-		int i,j,k;
-
-		for( i=0; i < MAX_FILAS; i++)
-			for( j=0; j < MAX_FILAS; j++)
-					mapa[i][j] = NULL;
-
-		for ( k = 0; k < nivel->tope_enemigos ; k++){
-	
-			if( nivel->enemigos[k].pos_en_camino > 0 ){
-				if(nivel->enemigos[k].vida > 0){
-	
-					if( (nivel->enemigos[k].camino == 1) && ( nivel->tope_camino_1 > 2 ) ){
-						i = nivel->camino_1[ nivel->enemigos[k].pos_en_camino ].fil;
-						j = nivel->camino_1[ nivel->enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = &(nivel->enemigos[k].vida);
-					}else if( (nivel->enemigos[k].camino == 2) && ( nivel->tope_camino_2 > 2 ) ){
-						i = nivel->camino_2[ nivel->enemigos[k].pos_en_camino ].fil;
-						j = nivel->camino_2[ nivel->enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = &(nivel->enemigos[k].vida);
-					}
-		
-				}
-			}
-		}	
 	}
 
 	bool coordenada_valida( coordenada_t coordenada ){
@@ -661,59 +638,78 @@
 		printf("\n\n");
 	}
 	
-	// ------------  INICIAR SPRITES ACA ------------
+	// ------------  INICIAR SPRITES ------------
+		// Deberia estar en un arvhivo externo
+		static const sprite_t SRPITE_VACIO  	= "  ";
+		static const sprite_t SRPITE_ORCO  		= " O";
+		static const sprite_t SRPITE_ELFO  		= " L";
+		static const sprite_t SRPITE_ENANO 		= " G";
+		static const sprite_t SRPITE_TORRE  	= "TT";
+		static const sprite_t SRPITE_TORRE_1	= "T1";
+		static const sprite_t SRPITE_TORRE_2	= "T2";
+		static const sprite_t SRPITE_ENTRADA	= "##";
+		static const sprite_t SRPITE_CAMINO 	= "00";
+		static const sprite_t SRPITE_CAMINO_1 	= "[]";
+		static const sprite_t SRPITE_CAMINO_2 	= "()";
+		static const sprite_t SRPITE_CAMINO_3 	= "{}";
+		static const sprite_t SRPITE_FIL_PAR  	= "__";
+		static const sprite_t SRPITE_COL_PAR  	= "  ";
+	// ------------  INICIAR SPRITES ------------
 	void iniciar_sprites( sprite_map_t* sprite_map ){
 	
 		sprite_map->tope = 0;
 	
 		sprite_map->indice [ sprite_map->tope ] = VACIO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "  ");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_VACIO);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ORCO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], " O");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ELFO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], " L");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ELFO);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ENANO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], " G");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ENANO);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = TORRE;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "TT");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_TORRE);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = TORRE_1;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "T1");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_TORRE_1);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = TORRE_2;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "T2");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_TORRE_2);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ENTRADA;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "##");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ENTRADA);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = CAMINO;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_CAMINO);
 		(sprite_map->tope)++;
 		sprite_map->indice [ sprite_map->tope ] = CAMINO_1;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "[]");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_CAMINO_1);
 		(sprite_map->tope)++;
 		sprite_map->indice [ sprite_map->tope ] = CAMINO_2;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "()");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_CAMINO_2);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = CAMINO_3;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_CAMINO_3);
 		(sprite_map->tope)++;
 
 		sprite_map->indice [ sprite_map->tope ] = FIL_PAR;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "__");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_FIL_PAR);
 		(sprite_map->tope)++;
 
 		sprite_map->indice [ sprite_map->tope ] = COL_PAR;
-		strcpy(sprite_map->sprites[ sprite_map->tope ], "  ");
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_COL_PAR);
 		(sprite_map->tope)++;
 	}
 	
@@ -764,15 +760,5 @@
 		}
 	
 		return dimension+1;
-	}
-
-	int dist_manhattan( coordenada_t p1, coordenada_t p2 ){
-
-		int delta_fil = p1.fil - p2.fil;
-		delta_fil = (delta_fil > 0)? delta_fil : - delta_fil;
-		int delta_col = p1.col - p2.col;
-		delta_col = (delta_col > 0)? delta_col : - delta_col;
-
-		return delta_fil + delta_col;
 	}
 //----- MOTOR GRAFICO ----- (¡)

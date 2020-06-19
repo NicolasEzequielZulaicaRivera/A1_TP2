@@ -97,6 +97,7 @@
     void pedir_int( int* dato, int min, int max, char msg[MAX_MSG] );
     void pedir_float( float* dato, float min, float max, char msg[MAX_MSG] );
     void pedir_char( char* dato, char opciones [MAX_OPT], char nombre_opciones [MAX_OPT][MAX_MSG], int tope, char msg[MAX_MSG] );
+    bool pedir_bool( char msg[MAX_MSG] );
     
     void tocar_para_continuar();
 // HEADER DE PEDIR DATOS (¡)
@@ -184,6 +185,9 @@
 
     // Pide al usuario que coloque un defensor extra segun las especificaciones del nivel
     void agregar_defensores_bonus( juego_t* juego, config_nivel_t config_nivel  );
+    
+    // Coloca automaticamente un defensor extra segun las especificaciones del nivel
+    void auto_agregar_defensores_bonus( juego_t* juego, config_nivel_t config_nivel  );
 
     // Devuelve las especificaciones del nivel pedido
     config_nivel_t buscar_config_nivel( int nivel );
@@ -283,6 +287,25 @@ int main(){
         return;
     }
 
+    bool pedir_bool( char msg[MAX_MSG] ){
+
+        char opciones [MAX_OPT]; 
+        char nombre_opciones [MAX_OPT][MAX_MSG];
+        int tope = 2;
+        opciones[0]= CONFIRMAR;
+        opciones[1]= CANCELAR;
+        strcpy(nombre_opciones[0],"SI");
+        strcpy(nombre_opciones[1],"NO");
+
+        char dato;
+        pedir_char(&dato,opciones,nombre_opciones,tope,msg);
+
+        if( dato == CONFIRMAR )
+            return true;
+
+        return false;
+    }
+
     void tocar_para_continuar(){
 
         printf("\n\t presione para continuar \n" );
@@ -326,7 +349,8 @@ int main(){
         printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
         printf("3: Complejidad de niveles - [COMPLEJIDAD : %i]\n",config->complejidad);
         printf("4: Rareza de niveles cruzados - [RAREZA : %i]\n",config->rareza_cruzado);
-        printf("5: Revivir a Sauron \n");
+        printf("5: Auto posicionar defensores - [ %c ] \n", 
+                ( (config->auto_defensores)?CONFIRMAR:CANCELAR ) );
         printf("6: Volver \n");
 
         char input[20];
@@ -354,6 +378,11 @@ int main(){
             case 4:
                 sprintf(msg,"Ingrese la RAREZA");
                 pedir_int( &(config->rareza_cruzado), 1, 50, msg );
+            break;
+
+            case 5:
+                sprintf(msg,"Auto posicionar defensores");
+                config->auto_defensores = pedir_bool(msg);
             break;
         }
         return;
@@ -400,6 +429,8 @@ int main(){
 
                 if( (turno % config_nivel.turnos_bonus == 0) && !(config.auto_defensores) )
                     agregar_defensores_bonus( juego, config_nivel );
+                else if( (turno % config_nivel.turnos_bonus == 0) && (config.auto_defensores) )
+                    auto_agregar_defensores_bonus( juego, config_nivel );
 
                 jugar_turno( juego );
                 turno ++;
@@ -599,8 +630,8 @@ int main(){
 
         for(int i = 0; i<nuevo_nivel.tope_enemigos; i++){
             nuevo_nivel.enemigos[i].vida= RES_ORCO + rand() %(RES_ORCO_RAND+1) ;
-            nuevo_nivel.enemigos[i].camino = 0;
-            nuevo_nivel.enemigos[i].pos_en_camino = -1;
+            nuevo_nivel.enemigos[i].camino = INVALIDO;
+            nuevo_nivel.enemigos[i].pos_en_camino = INVALIDO;
         }
 
         return nuevo_nivel;
@@ -674,19 +705,17 @@ int main(){
 
     void auto_agregar_defensores( juego_t* juego, config_nivel_t config_nivel  ){
 
-        int col, fil, i;
-        coordenada_t posicion;
+        int i;
+        coordenada_t posicion, aux;
         
         // ENANOS
         i=0;
         while( i<config_nivel.enanos ){
 
             do{
-                fil = rand()%config_nivel.dimension-1;
-                col = rand()%config_nivel.dimension-1;
-                posicion.fil = fil;
-                posicion.col = col;
-
+                aux = juego->nivel.camino_1[ rand()%juego->nivel.tope_camino_1 ];
+                posicion.fil = aux.fil-1+rand()%3;
+                posicion.col = aux.col-1+rand()%3;
             } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
             i++;
         }
@@ -695,10 +724,9 @@ int main(){
         i=0;
         while( i<config_nivel.elfos){
             do{
-                fil = rand()%config_nivel.dimension-1;
-                col = rand()%config_nivel.dimension-1;
-                posicion.fil = fil;
-                posicion.col = col;
+                aux = juego->nivel.camino_2[ rand()%juego->nivel.tope_camino_2 ];
+                posicion.fil = aux.fil-1+rand()%3;
+                posicion.col = aux.col-1+rand()%3;
             } while ( agregar_defensor( &(juego->nivel), posicion, ELFO) == INVALIDO );
             i++;
             mostrar_juego(*juego);
@@ -761,10 +789,12 @@ int main(){
         if( toupper(tipo) == toupper(ENANO) ){
             tipo = ENANO;
             juego->torres.resistencia_torre_1 -= COSTO_ENA_EXT;
+            juego->torres.enanos_extra --;
         }
         else if( toupper(tipo) == toupper(ELFO) ){
             tipo = ELFO;
             juego->torres.resistencia_torre_2 -= COSTO_ELF_EXT;
+            juego->torres.elfos_extra --;
         }
         else
             return;
@@ -791,6 +821,59 @@ int main(){
                 juego->nivel.tope_defensores --;
             }
         }while(toupper(estado) == toupper(CANCELAR));
+    }
+
+    void auto_agregar_defensores_bonus( juego_t* juego, config_nivel_t config_nivel  ){
+
+        coordenada_t posicion,aux;
+        char tipo;
+        bool enanos,elfos;
+
+        enanos = ( config_nivel.torre_1 && 
+            juego->torres.enanos_extra > 0);
+
+        elfos = ( config_nivel.torre_2 && 
+            juego->torres.elfos_extra > 0);
+
+
+        if( enanos && elfos ){
+            if( rand()%2 ){
+                tipo = ENANO;
+                juego->torres.enanos_extra --;
+            }else{
+                tipo = ELFO;
+                juego->torres.elfos_extra --;
+            }
+        }
+        else if( enanos ){
+            tipo = ENANO;
+            juego->torres.enanos_extra --;
+
+        }
+        else if( elfos ){
+            tipo = ELFO;
+            juego->torres.elfos_extra --;
+        }
+        else
+            return;
+
+        if( tipo == ENANO ){
+            do{
+                aux = juego->nivel.camino_1[ rand()%juego->nivel.tope_camino_1 ];
+                posicion.fil = aux.fil-1+rand()%3;
+                posicion.col = aux.col-1+rand()%3;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, tipo) == INVALIDO );
+        }
+
+        if( tipo == ELFO ){
+            do{
+                aux = juego->nivel.camino_2[ rand()%juego->nivel.tope_camino_2 ];
+                posicion.fil = aux.fil-1+rand()%3;
+                posicion.col = aux.col-1+rand()%3;
+
+            } while ( agregar_defensor( &(juego->nivel), posicion, tipo) == INVALIDO );
+        }
     }
 
     config_nivel_t buscar_config_nivel( int nivel ){
