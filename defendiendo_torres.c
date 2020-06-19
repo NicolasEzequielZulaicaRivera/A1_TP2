@@ -216,7 +216,10 @@
 		int dim = dimension( *nivel );
 
 		// ESTA DENTRO DEL TABLERO
-		es_posible = (posicion.fil < dim) && (posicion.col < dim);
+		es_posible =(posicion.fil < dim) && 
+					(posicion.col < dim) &&
+					(posicion.fil > 0) &&
+					(posicion.col > 0);
 		
 		// NO ESTA EN EL CAMINO 1
 		if( es_posible )
@@ -587,6 +590,7 @@
 		printf("\t Torre 2: %i ",juego.torres.resistencia_torre_2);
 		printf("\t Enemigos: %i ",juego.nivel.max_enemigos_nivel);// este atributo esta siendo reciclado
 		printf("\n");
+
 		printf("\033[0m");
 	}
 //----- MOTOR DE JUEGO ----- (¡)
@@ -652,7 +656,7 @@
 		static const sprite_t SRPITE_TORRE  	= "TT";
 		static const sprite_t SRPITE_TORRE_1	= "\033[1;97;44mT1\033[0m";
 		static const sprite_t SRPITE_TORRE_2	= "\033[1;97;42mT2\033[0m";
-		static const sprite_t SRPITE_ENTRADA	= "\033[1;91;41m##\033[0m";
+		static const sprite_t SRPITE_ENTRADA	= "\033[1;5;91;45m##\033[0m";
 		static const sprite_t SRPITE_CAMINO 	= "00";
 		static const sprite_t SRPITE_CAMINO_1 	= "\033[94;44;52m[]\033[0m";
 		static const sprite_t SRPITE_CAMINO_2 	= "\033[92;42;51m[]\033[0m";

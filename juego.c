@@ -25,6 +25,8 @@
     static const int RES_ORCO  = 200;
     static const int RES_ORCO_RAND  = 100;
 
+    static const int RESISTENICA_TORRE_INI = 600;
+
     static const int COSTO_ENA_EXT = 50;
     static const int COSTO_ELF_EXT = 50;
 
@@ -191,7 +193,10 @@
 
     // Devuelve las especificaciones del nivel pedido
     config_nivel_t buscar_config_nivel( int nivel );
-// HEADER JUEGO (¡)
+
+    // Muestra las variables que dependen de los animos y pregunta si se quieren iniciar
+    void iniciar_animos(int* viento , int* humedad , char* animo_legolas , char* animo_gimli);
+ // HEADER JUEGO (¡)
 
 
 int main(){
@@ -225,7 +230,7 @@ int main(){
             break;
 
             case OPCION_INICIALIZAR_ANIMOS:
-                animos(&viento , &humedad , &animo_legolas , &animo_gimli);
+                iniciar_animos(&viento , &humedad , &animo_legolas , &animo_gimli);
             break;
 
             case OPCION_MOSTRAR_OPCIONES:
@@ -326,7 +331,7 @@ int main(){
         printf("----------------------------------------------------\n");
         printf("\n");
         printf("%i: Nuevo Juego \n", OPCION_NUEVO_JUEGO);
-        printf("%i: Iniciar Animos \n", OPCION_INICIALIZAR_ANIMOS);
+        printf("%i: Animos \n", OPCION_INICIALIZAR_ANIMOS);
         printf("%i: Opciones \n", OPCION_MOSTRAR_OPCIONES);
         printf("%i: Salir \n", OPCION_SALIR);
 
@@ -338,66 +343,67 @@ int main(){
     void mostrar_opciones( juego_t* juego , config_t* config ){
 
         int opcion = 0;
+        while( opcion != 8 ){
+            system("clear");
+            printf("\n");
+            printf("----------------------------------------------------\n");
+            printf("-------------         OPCIONES         -------------\n");
+            printf("----------------------------------------------------\n");
+            printf("\n");
+            printf("1: Tiempo entre turnos - [ESPERA : %f] \n",config->velocidad);
+            printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
+            printf("3: Complejidad de niveles - [COMPLEJIDAD : %i]\n",config->complejidad);
+            printf("4: Rareza de niveles cruzados - [RAREZA : %i]\n",config->rareza_cruzado);
+            printf("5: Auto posicionar defensores - [ %c ] \n", 
+                    ( (config->auto_defensores)?CONFIRMAR:CANCELAR ) );
+            printf("6: Invencibilidad - [ %c ] \n", 
+                    ( (config->godmode)?CONFIRMAR:CANCELAR ) );
+            printf("7: Saltear niveles - [ %c ] \n", 
+                    ( (config->saltear_niveles)?CONFIRMAR:CANCELAR ) );
+            printf("8: Volver \n");
 
-        system("clear");
-        printf("\n");
-        printf("----------------------------------------------------\n");
-        printf("-------------         OPCIONES         -------------\n");
-        printf("----------------------------------------------------\n");
-        printf("\n");
-        printf("1: Tiempo entre turnos - [ESPERA : %f] \n",config->velocidad);
-        printf("2: Regeneracion por nivel - [BONUS : %i]\n",config->bonus_resistencia);
-        printf("3: Complejidad de niveles - [COMPLEJIDAD : %i]\n",config->complejidad);
-        printf("4: Rareza de niveles cruzados - [RAREZA : %i]\n",config->rareza_cruzado);
-        printf("5: Auto posicionar defensores - [ %c ] \n", 
-                ( (config->auto_defensores)?CONFIRMAR:CANCELAR ) );
-        printf("6: Invencibilidad - [ %c ] \n", 
-                ( (config->godmode)?CONFIRMAR:CANCELAR ) );
-        printf("7: Saltear niveles - [ %c ] \n", 
-                ( (config->saltear_niveles)?CONFIRMAR:CANCELAR ) );
-        printf("8: Volver \n");
+            char input[20];
+            scanf("%s",input);
+            opcion = input[0]-48;
 
-        char input[20];
-        scanf("%s",input);
-        opcion = input[0]-48;
+            char msg[MAX_MSG];
 
-        char msg[MAX_MSG];
+            switch( opcion ){
+                case 1:
+                    sprintf(msg," Ingrese la FRECUENCIA");
+                    pedir_float( &(config->velocidad), 0.1f, 1.0f, msg );
+                break;
 
-        switch( opcion ){
-            case 1:
-                sprintf(msg," Ingrese la FRECUENCIA");
-                pedir_float( &(config->velocidad), 0.1f, 1.0f, msg );
-            break;
+                case 2:
+                    sprintf(msg," Ingrese el BONUS");
+                    pedir_int( &(config->bonus_resistencia), 0, 9000, msg );
+                break;
 
-            case 2:
-                sprintf(msg," Ingrese el BONUS");
-                pedir_int( &(config->bonus_resistencia), 0, 9000, msg );
-            break;
+                case 3:
+                    sprintf(msg,"Ingrese la COMPLEJIDAD");
+                    pedir_int( &(config->complejidad), 0, 5, msg );
+                break;
 
-            case 3:
-                sprintf(msg,"Ingrese la COMPLEJIDAD");
-                pedir_int( &(config->complejidad), 0, 5, msg );
-            break;
+                case 4:
+                    sprintf(msg,"Ingrese la RAREZA");
+                    pedir_int( &(config->rareza_cruzado), 1, 50, msg );
+                break;
 
-            case 4:
-                sprintf(msg,"Ingrese la RAREZA");
-                pedir_int( &(config->rareza_cruzado), 1, 50, msg );
-            break;
+                case 5:
+                    sprintf(msg,"Auto posicionar defensores");
+                    config->auto_defensores = pedir_bool(msg);
+                break;
 
-            case 5:
-                sprintf(msg,"Auto posicionar defensores");
-                config->auto_defensores = pedir_bool(msg);
-            break;
+                case 6:
+                    sprintf(msg,"Ser invencible");
+                    config->godmode = pedir_bool(msg);
+                break;
 
-            case 6:
-                sprintf(msg,"Ser invencible");
-                config->godmode = pedir_bool(msg);
-            break;
-
-            case 7:
-                sprintf(msg,"Saltear niveles");
-                config->saltear_niveles = pedir_bool(msg);
-            break;
+                case 7:
+                    sprintf(msg,"Saltear niveles");
+                    config->saltear_niveles = pedir_bool(msg);
+                break;
+            }
         }
         return;
     }
@@ -456,8 +462,9 @@ int main(){
             }
 
             if(config.godmode){
-                juego->torres.resistencia_torre_1 += 1;
-                juego->torres.resistencia_torre_2 += 1;
+                juego->torres.resistencia_torre_1 = 
+                juego->torres.resistencia_torre_2 = 
+                RESISTENICA_TORRE_INI;
             }
         }
 
@@ -905,6 +912,24 @@ int main(){
                 config_nivel = niveles[i];
 
         return config_nivel;
+    }
+
+    void iniciar_animos(int* viento , int* humedad , char* animo_legolas , char* animo_gimli){
+
+        system("clear");
+        printf("\n");
+        printf("----------------------------------------------------\n");
+        printf("-------------          ANIMOS          -------------\n");
+        printf("----------------------------------------------------\n");
+        printf("\n");
+        printf("> Viento : %i \n",*viento);
+        printf("> Humedad : %i \n",*humedad);
+        printf("> Animo Legolas : %c \n",*animo_legolas);
+        printf("> Animo Gimli : %c \n",*animo_gimli);
+        printf("\n\n");
+
+        if( pedir_bool("INICIAR ANIMOS") )
+            animos(viento , humedad , animo_legolas , animo_gimli);
     }
 // JUEGO (¡)
 
