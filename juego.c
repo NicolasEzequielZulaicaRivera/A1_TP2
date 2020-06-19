@@ -70,7 +70,7 @@
         .torre_1 = true, .torre_2 = true,
         .enanos = 3, .elfos = 3, 
         .orcos = 300,
-        .turnos_bonus = 50
+        .turnos_bonus = 50/2
     };
 
     const config_nivel_t NIVEL_4 ={ 
@@ -80,7 +80,7 @@
         .torre_1 = true, .torre_2 = true,
         .enanos = 4, .elfos = 4, 
         .orcos = 250,
-        .turnos_bonus = 25
+        .turnos_bonus = 50/2
     };
 
     const int MAX_INTENTOS = 20;
@@ -351,7 +351,11 @@ int main(){
         printf("4: Rareza de niveles cruzados - [RAREZA : %i]\n",config->rareza_cruzado);
         printf("5: Auto posicionar defensores - [ %c ] \n", 
                 ( (config->auto_defensores)?CONFIRMAR:CANCELAR ) );
-        printf("6: Volver \n");
+        printf("6: Invencibilidad - [ %c ] \n", 
+                ( (config->godmode)?CONFIRMAR:CANCELAR ) );
+        printf("7: Saltear niveles - [ %c ] \n", 
+                ( (config->saltear_niveles)?CONFIRMAR:CANCELAR ) );
+        printf("8: Volver \n");
 
         char input[20];
         scanf("%s",input);
@@ -383,6 +387,16 @@ int main(){
             case 5:
                 sprintf(msg,"Auto posicionar defensores");
                 config->auto_defensores = pedir_bool(msg);
+            break;
+
+            case 6:
+                sprintf(msg,"Ser invencible");
+                config->godmode = pedir_bool(msg);
+            break;
+
+            case 7:
+                sprintf(msg,"Saltear niveles");
+                config->saltear_niveles = pedir_bool(msg);
             break;
         }
         return;

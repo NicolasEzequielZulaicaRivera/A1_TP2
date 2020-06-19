@@ -29,10 +29,11 @@
 	
 	#include <string.h>
 	
+	#define SPRITE_STYLE_SIZE 20 // \033[1;31;40m\033[0m
 	#define SPRITE_SIZE 2 // >= 2
 	#define MAX_SPRITES 15
 	
-	typedef char sprite_t[SPRITE_SIZE+1];
+	typedef char sprite_t[SPRITE_SIZE+SPRITE_STYLE_SIZE+1];
 	
 	typedef struct sprite_map{
 		sprite_t sprites[MAX_SPRITES];
@@ -212,8 +213,10 @@
 	
 		bool es_posible = true;
 
-		// ESTA DENTRO DEL TABLERO -> aplicar dimension
-		es_posible = (posicion.fil < MAX_FILAS) && (posicion.col < MAX_COLUMNAS);
+		int dim = dimension( *nivel );
+
+		// ESTA DENTRO DEL TABLERO
+		es_posible = (posicion.fil < dim) && (posicion.col < dim);
 		
 		// NO ESTA EN EL CAMINO 1
 		if( es_posible )
@@ -578,11 +581,13 @@
 	}
 
 	void mostrar_datos(juego_t juego){
+		printf("\033[0;40m");
 		printf("\n Nivel: %i ",juego.nivel_actual);
 		printf("\t Torre 1: %i ",juego.torres.resistencia_torre_1);
 		printf("\t Torre 2: %i ",juego.torres.resistencia_torre_2);
 		printf("\t Enemigos: %i ",juego.nivel.max_enemigos_nivel);// este atributo esta siendo reciclado
 		printf("\n");
+		printf("\033[0m");
 	}
 //----- MOTOR DE JUEGO ----- (¡)
 
@@ -600,60 +605,60 @@
 		for(i = 0; i < SPRITE_SIZE-2;i++)
 			espacio_blanco[i]=' ';
 		espacio_blanco[i]='\0';
-	
-		printf("\n|==||");
+		  
+		printf("\n\033[0;40m|==||");
 		for(j=0 ; j < dimension; j++){
 			printf("%s", espacio_blanco);
 			if( j < 10 )
 				printf("0");
 			printf("%i|", j);
 		}
-		printf("|==|");
+		printf("|==| \033[0m");
 		for (i = 0; i < dimension; i++)
 		{
-			printf("\n|");
+			printf("\n\033[0;40m|");
 			if( i < 10 )
 				printf("0");
-			printf("%i| ",i);
+			printf("%i||\033[0m",i);
 
 			for( j = 0; j < dimension; j++ ){
 				buscar_sprite( sprite_map ,mapa[i][j], &sprite);
-				printf("%s ",sprite);
+				printf("%s\033[2;40m|\033[0m",sprite);
 			}
 
-			printf("|");
+			printf("\033[0;40m|");
 			if( i < 10 )
 				printf("0");
-			printf("%i| ",i);
+			printf("%i| \033[0m",i);
 		}
 
-		printf("\n|==||");
+		printf("\n\033[0;40m|==||");
 		for(j=0 ; j < dimension; j++){
 			printf("%s", espacio_blanco);
 			if( j < 10 )
 				printf("0");
 			printf("%i|", j);
 		}
-		printf("|==|");
-		printf("\n\n");
+		printf("|==| ");
+		printf("\033[0m\n\n");
 	}
 	
 	// ------------  INICIAR SPRITES ------------
 		// Deberia estar en un arvhivo externo
-		static const sprite_t SRPITE_VACIO  	= "  ";
-		static const sprite_t SRPITE_ORCO  		= " O";
-		static const sprite_t SRPITE_ELFO  		= " L";
-		static const sprite_t SRPITE_ENANO 		= " G";
+		static const sprite_t SRPITE_VACIO  	= "\033[0;40m  \033[0m";
+		static const sprite_t SRPITE_ORCO  		= "\033[1;31;41m¶■\033[0m";
+		static const sprite_t SRPITE_ELFO  		= "\033[1;6;102m{i\033[0m";
+		static const sprite_t SRPITE_ENANO 		= "\033[1;6;104mtT\033[0m";
 		static const sprite_t SRPITE_TORRE  	= "TT";
-		static const sprite_t SRPITE_TORRE_1	= "T1";
-		static const sprite_t SRPITE_TORRE_2	= "T2";
-		static const sprite_t SRPITE_ENTRADA	= "##";
+		static const sprite_t SRPITE_TORRE_1	= "\033[1;97;44mT1\033[0m";
+		static const sprite_t SRPITE_TORRE_2	= "\033[1;97;42mT2\033[0m";
+		static const sprite_t SRPITE_ENTRADA	= "\033[1;91;41m##\033[0m";
 		static const sprite_t SRPITE_CAMINO 	= "00";
-		static const sprite_t SRPITE_CAMINO_1 	= "[]";
-		static const sprite_t SRPITE_CAMINO_2 	= "()";
-		static const sprite_t SRPITE_CAMINO_3 	= "{}";
-		static const sprite_t SRPITE_FIL_PAR  	= "__";
-		static const sprite_t SRPITE_COL_PAR  	= "  ";
+		static const sprite_t SRPITE_CAMINO_1 	= "\033[94;44;52m[]\033[0m";
+		static const sprite_t SRPITE_CAMINO_2 	= "\033[92;42;51m[]\033[0m";
+		static const sprite_t SRPITE_CAMINO_3 	= "\033[96;46m[]\033[0m";
+		static const sprite_t SRPITE_FIL_PAR  	= "\033[2;40m__\033[0m";
+		static const sprite_t SRPITE_COL_PAR  	= "\033[2;40m  \033[0m";
 	// ------------  INICIAR SPRITES ------------
 	void iniciar_sprites( sprite_map_t* sprite_map ){
 	
