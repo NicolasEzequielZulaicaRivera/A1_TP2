@@ -232,8 +232,8 @@
 		// para que pase las pruebas
 		es_posible =(posicion.fil < MAX_FILAS) && 
 					(posicion.col < MAX_COLUMNAS) &&
-					(posicion.fil > 0) &&
-					(posicion.col > 0);/**/
+					(posicion.fil >= 0) &&
+					(posicion.col >= 0);
 		
 		// NO ESTA EN EL CAMINO 1
 		if( es_posible )
