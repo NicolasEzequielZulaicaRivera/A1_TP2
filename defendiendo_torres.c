@@ -235,8 +235,8 @@
 		// para que pase las pruebas
 		es_posible =(posicion.fil < MAX_FILAS) && 
 					(posicion.col < MAX_COLUMNAS) &&
-					(posicion.fil >= 0) &&
-					(posicion.col >= 0);
+					(posicion.fil >= -1000) &&
+					(posicion.col >= -1000);
 		
 		// NO ESTA EN EL CAMINO 1
 		if( es_posible )
@@ -477,43 +477,45 @@
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
 	
-		for(i = 0; i < juego->nivel.max_enemigos_nivel; i++){
+		for(i = 0; i < juego->nivel.tope_enemigos; i++){
 	
-			if( juego->nivel.enemigos[i].vida > 0 ){
+			if( 
+				juego->nivel.enemigos[i].pos_en_camino > 0 &&
+				i < juego->nivel.tope_enemigos &&
+				juego->nivel.enemigos[i].vida > 0  
+			){
+				(juego->nivel.enemigos[i].pos_en_camino)++;
 	
-				if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
-					(juego->nivel.enemigos[i].pos_en_camino)++;
-	
-					if( (juego->nivel.enemigos[i].camino == 1) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
-							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
-					}else if( (juego->nivel.enemigos[i].camino == 2) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
-							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
-					}
+				if( (juego->nivel.enemigos[i].camino == 1) && 
+					(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
+						juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
+				}else if( (juego->nivel.enemigos[i].camino == 2) && 
+					(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
+						juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
 				}
-				else if( mover_1 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 1;
-					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-					juego->nivel.tope_enemigos ++;
-					mover_1 = false;
-				}
-				else if( mover_2 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 2;
-					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-					juego->nivel.tope_enemigos ++;
-					mover_2 = false;
-				}
-	
-			}else{
-				juego->nivel.enemigos[i].vida = 0;
 			}
-	
 		}
+		if( mover_1 &&
+		juego->nivel.tope_enemigos <= juego->nivel.max_enemigos_nivel){
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 1;
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 1;
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+			juego->nivel.tope_enemigos ++;
+			mover_1 = false;
+		}
+		if( mover_2 &&
+		juego->nivel.tope_enemigos <= juego->nivel.max_enemigos_nivel){
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 1;
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 2;
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+			juego->nivel.tope_enemigos ++;
+			mover_2 = false;
+		}
+	
+		
+	
 	}
 
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
@@ -594,6 +596,7 @@
 	}
 
 	bool coordenada_valida( coordenada_t coordenada ){
+		return true;
 		return (coordenada.fil >= 0) && (coordenada.col >= 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
 	}
 
