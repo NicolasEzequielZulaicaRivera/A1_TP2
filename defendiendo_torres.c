@@ -18,6 +18,9 @@
 	static const char TORRE_2 = '2';
 	static const char ENTRADA = 'E';
 	static const char ORCO  = 'O';
+	static const char ORCO_1= 'O';
+	static const char ORCO_2= 'o';
+	static const char ORCO_3= 'd';
 	static const char ELFO  = 'L';
 	static const char ENANO = 'G';
 	//static const char SIN_TIPO = 'X';
@@ -30,7 +33,7 @@
 	
 	#define SPRITE_STYLE_SIZE 20 // \033[1;31;40m\033[0m
 	#define SPRITE_SIZE 2 // >= 2
-	#define MAX_SPRITES 15
+	#define MAX_SPRITES 20
 	
 	typedef char sprite_t[SPRITE_SIZE+SPRITE_STYLE_SIZE+1];
 	
@@ -336,6 +339,7 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
+		int dano;
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
@@ -364,25 +368,19 @@
 					
 						if(  rand()%100 >= prob_fail ){
 
-							juego->nivel.enemigos[m].vida -=
-								juego->nivel.defensores[k].fuerza_ataque;
+							dano = juego->nivel.defensores[k].fuerza_ataque;
 
-							if( rand()%100 < prob_crit ){
-									juego->nivel.enemigos[m].vida -= 
-										CRITICO_ENA;
-								}
+							if( rand()%100 < prob_crit )
+									dano = CRITICO_ENA;
 
+							juego->nivel.enemigos[m].vida -= dano;
 						}
 
 						atacar = false;
 					}
 				}
 			}
-		}
-
-		if(coordenada_valida(pos_atk) && atacar && coordenada_valida(pos)){};
-
-		
+		}	
 
 		return;
 	}
@@ -409,6 +407,7 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
+		int dano;
 
 		int prob_crit = juego->critico_legolas;
 		int prob_fail = juego->fallo_legolas;
@@ -437,13 +436,13 @@
 					
 						if(  rand()%100 >= prob_fail ){
 
-							juego->nivel.enemigos[m].vida -=
-								juego->nivel.defensores[k].fuerza_ataque;
+							dano = juego->nivel.defensores[k].fuerza_ataque;
 
 							if( rand()%100 < prob_crit ){
-									juego->nivel.enemigos[m].vida -= 
-										CRITICO_ELF;
-								}
+								dano = CRITICO_ELF;
+							}
+
+							juego->nivel.enemigos[m].vida -= dano;
 						}
 
 					}
@@ -510,6 +509,8 @@
 					mover_2 = false;
 				}
 	
+			}else{
+				juego->nivel.enemigos[i].vida = 0;
 			}
 	
 		}
@@ -562,14 +563,19 @@
 			if( nivel.enemigos[k].pos_en_camino > 0 ){
 				if(nivel.enemigos[k].vida > 0){
 	
+					char tipo_orco =
+						(nivel.enemigos[k].vida > RES_ORCO  )? ORCO_1:
+						(nivel.enemigos[k].vida > RES_ORCO/2)? ORCO_2:
+						ORCO_3;
+
 					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
 						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
 						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
+						mapa[ i ][ j ] = tipo_orco;
 					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
 						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
 						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
+						mapa[ i ][ j ] = tipo_orco;
 					}
 		
 				}else{
@@ -664,6 +670,9 @@
 		// Deberia estar en un arvhivo externo
 		static const sprite_t SRPITE_VACIO  	= "\033[0;40m  \033[0m";
 		static const sprite_t SRPITE_ORCO  		= "\033[1;31;41m¶■\033[0m";
+		static const sprite_t SRPITE_ORCO_1		= "\033[1;31;41m¶■\033[0m";
+		static const sprite_t SRPITE_ORCO_2		= "\033[2;31;41m¶ \033[0m";
+		static const sprite_t SRPITE_ORCO_3		= "\033[2;31m¶ \033[0m";
 		static const sprite_t SRPITE_ELFO  		= "\033[1;6;102m{i\033[0m";
 		static const sprite_t SRPITE_ENANO 		= "\033[1;6;104mtT\033[0m";
 		static const sprite_t SRPITE_TORRE  	= "TT";
@@ -687,6 +696,15 @@
 	
 		sprite_map->indice [ sprite_map->tope ] = ORCO;
 		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_1;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_1);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_2;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_2);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_3;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_3);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ELFO;
