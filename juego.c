@@ -456,7 +456,7 @@ int main(){
                 }
 
                 mostrar_juego( *juego );
-                detener_el_tiempo( config.velocidad*4 );
+                detener_el_tiempo( config.velocidad*3 );
 
             }else{
 

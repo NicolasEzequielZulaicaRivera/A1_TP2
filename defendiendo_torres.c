@@ -82,8 +82,8 @@
 	static const int PROB_CRIT_REG = 10;
 	static const int PROB_CRIT_BNO = 25;
 
-	static const int RES_ORCO  = 2;//ZZZZZZ
-    static const int RES_ORCO_RAND  = 1;
+	static const int RES_ORCO  = 200;
+    static const int RES_ORCO_RAND  = 100;
 	
 	static const int DIV_VIENTO_A_FALLO   = 2;
 	static const int DIV_HUMEADAD_A_FALLO = 2;
@@ -588,7 +588,7 @@
 	}
 
 	bool coordenada_valida( coordenada_t coordenada ){
-		return (coordenada.fil > 0) && (coordenada.col > 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
+		return (coordenada.fil >= 0) && (coordenada.col >= 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
 	}
 
 	void mostrar_datos(juego_t juego){
