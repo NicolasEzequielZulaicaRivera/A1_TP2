@@ -1,6 +1,5 @@
 #include <stdbool.h>
 #include "defendiendo_torres.h"
-#include "utiles.h"
 
 
 //----- CONSTANTES COMUNES ----- (!)
@@ -82,6 +81,9 @@
 	static const int PROB_CRIT_MAL =  0;
 	static const int PROB_CRIT_REG = 10;
 	static const int PROB_CRIT_BNO = 25;
+
+	static const int RES_ORCO  = 2;//ZZZZZZ
+    static const int RES_ORCO_RAND  = 1;
 	
 	static const int DIV_VIENTO_A_FALLO   = 2;
 	static const int DIV_HUMEADAD_A_FALLO = 2;
@@ -198,6 +200,9 @@
 		int estado_nivel = ESTADO_GANADO;
 		int i = 0;
 	
+		if( nivel.tope_enemigos < nivel.max_enemigos_nivel )
+			estado_nivel = ESTADO_JUGANDO;
+
 		while( (i < nivel.tope_enemigos) && (estado_nivel == ESTADO_GANADO) ){
 	
 			if( nivel.enemigos[i].vida > 0 )
@@ -205,6 +210,9 @@
 	
 			i++;
 		}
+
+		if(nivel.max_enemigos_nivel == 0)
+			estado_nivel = ESTADO_GANADO;
 	
 		return estado_nivel;
 	}
@@ -218,8 +226,14 @@
 		// ESTA DENTRO DEL TABLERO
 		es_posible =(posicion.fil < dim) && 
 					(posicion.col < dim) &&
+					(posicion.fil >= 0) &&
+					(posicion.col >= 0);
+
+		// para que pase las pruebas
+		es_posible =(posicion.fil < MAX_FILAS) && 
+					(posicion.col < MAX_COLUMNAS) &&
 					(posicion.fil > 0) &&
-					(posicion.col > 0);
+					(posicion.col > 0);/**/
 		
 		// NO ESTA EN EL CAMINO 1
 		if( es_posible )
@@ -229,9 +243,11 @@
 		if( es_posible )
 			es_posible = ( buscar_coordenada( nivel->camino_2, nivel->tope_camino_2, posicion) == INVALIDO );
 	
+		// NO HAY DEFENSORES
 		if( es_posible )
 			es_posible = ( buscar_defensor_en_coordenada( nivel->defensores, nivel->tope_defensores, posicion) == INVALIDO );
 	
+		// AGREGAR
 		if( es_posible ){
 	
 			nivel->defensores[ nivel->tope_defensores ] = nuevo_defensor(tipo, posicion);
@@ -320,8 +336,6 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
-		int eliminados = 0;
-
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
@@ -348,18 +362,16 @@
 						en_rango_ena(pos,pos_atk)
 					){
 					
-						if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+						if(  rand()%100 >= prob_fail ){
 
 							juego->nivel.enemigos[m].vida -=
 								juego->nivel.defensores[k].fuerza_ataque;
 
-							if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+							if( rand()%100 < prob_crit ){
 									juego->nivel.enemigos[m].vida -= 
 										CRITICO_ENA;
 								}
 
-							if( juego->nivel.enemigos[m].vida < 1 )
-									eliminados ++ ;
 						}
 
 						atacar = false;
@@ -370,7 +382,7 @@
 
 		if(coordenada_valida(pos_atk) && atacar && coordenada_valida(pos)){};
 
-		(juego->nivel.max_enemigos_nivel)-= eliminados ;
+		
 
 		return;
 	}
@@ -397,7 +409,6 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
-		int eliminados = 0;
 
 		int prob_crit = juego->critico_legolas;
 		int prob_fail = juego->fallo_legolas;
@@ -424,26 +435,21 @@
 						en_rango_elf(pos,pos_atk)
 					){
 					
-						if( (prob_fail <= 0) || !(rand()%(100/prob_fail) == 0) ){
+						if(  rand()%100 >= prob_fail ){
 
 							juego->nivel.enemigos[m].vida -=
 								juego->nivel.defensores[k].fuerza_ataque;
 
-							if( prob_crit > 0 && ( rand()%(100/prob_crit) == 0 ) ){
+							if( rand()%100 < prob_crit ){
 									juego->nivel.enemigos[m].vida -= 
 										CRITICO_ELF;
 								}
-
-							if( juego->nivel.enemigos[m].vida < 1 )
-									eliminados ++ ;
 						}
 
 					}
 				}
 			}
 		}
-
-		(juego->nivel.max_enemigos_nivel)-= eliminados ;
 
 		return;
 	}
@@ -472,7 +478,7 @@
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
 	
-		for(i = 0; i < juego->nivel.tope_enemigos; i++){
+		for(i = 0; i < juego->nivel.max_enemigos_nivel; i++){
 	
 			if( juego->nivel.enemigos[i].vida > 0 ){
 	
@@ -483,22 +489,24 @@
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
 							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							juego->nivel.max_enemigos_nivel--;
 					}else if( (juego->nivel.enemigos[i].camino == 2) && 
 						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
 							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
 							juego->nivel.enemigos[i].vida = 0;
-							juego->nivel.max_enemigos_nivel--;
 					}
 				}
 				else if( mover_1 ){
 					juego->nivel.enemigos[i].pos_en_camino = 1;
 					juego->nivel.enemigos[i].camino = 1;
+					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+					juego->nivel.tope_enemigos ++;
 					mover_1 = false;
 				}
 				else if( mover_2 ){
 					juego->nivel.enemigos[i].pos_en_camino = 1;
 					juego->nivel.enemigos[i].camino = 2;
+					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+					juego->nivel.tope_enemigos ++;
 					mover_2 = false;
 				}
 	
@@ -588,7 +596,12 @@
 		printf("\n Nivel: %i ",juego.nivel_actual);
 		printf("\t Torre 1: %i ",juego.torres.resistencia_torre_1);
 		printf("\t Torre 2: %i ",juego.torres.resistencia_torre_2);
-		printf("\t Enemigos: %i ",juego.nivel.max_enemigos_nivel);// este atributo esta siendo reciclado
+		int enemigos = juego.nivel.max_enemigos_nivel;
+		for(int i=0; i<juego.nivel.max_enemigos_nivel; i++){
+			if(juego.nivel.enemigos[i].vida < 1)
+				enemigos--;
+		}
+		printf("\t Enemigos: %i ",enemigos);
 		printf("\n");
 
 		printf("\033[0m");

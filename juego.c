@@ -45,6 +45,16 @@
     #define ENTRADA_NORTE 'N'
     #define ENTRADA_SUR   'S'
 
+    const config_nivel_t NIVEL_1x ={ 
+        .num = 1,
+        .dimension = 15,
+        .entrada = ENTRADA_ESTE,
+        .torre_1 = true, .torre_2 = false,
+        .enanos = 1, .elfos = 0, 
+        .orcos = 1,
+        .turnos_bonus = 25
+    };
+
     const config_nivel_t NIVEL_1 ={ 
         .num = 1,
         .dimension = 15,
@@ -437,13 +447,16 @@ int main(){
 
                 bonus_nuevo_nivel( juego , config );
 
-                if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.tope_enemigos > 0) ){
+                if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.max_enemigos_nivel > 0) ){
 
                     if( config.auto_defensores )
                         auto_agregar_defensores( juego, config_nivel );
                     else
                         agregar_defensores( juego, config_nivel );
                 }
+
+                mostrar_juego( *juego );
+                detener_el_tiempo( config.velocidad*4 );
 
             }else{
 
@@ -455,9 +468,8 @@ int main(){
                 jugar_turno( juego );
                 turno ++;
 
-                detener_el_tiempo( config.velocidad );
-
                 mostrar_juego( *juego );
+                detener_el_tiempo( config.velocidad );
 
             }
 
@@ -492,7 +504,7 @@ int main(){
 
         system("clear");
 
-        if( nivel > 0)
+        if( nivel-1 > 0)
             printf("\n\t HAS COMPLETADO EL NIVEL %i \n", nivel-1 );
 
         if( nivel <= CANTIDAD_NIVELES )
@@ -536,6 +548,7 @@ int main(){
         nuevo_nivel.tope_camino_2 = 0;
         nuevo_nivel.tope_defensores = 0;
         nuevo_nivel.tope_enemigos = 0;
+        nuevo_nivel.max_enemigos_nivel = 0;
 
         config_nivel_t config;
         config.num = 0;
@@ -552,7 +565,7 @@ int main(){
 
             dimension = config.dimension ;
 
-            nuevo_nivel.tope_enemigos = config.orcos;
+            nuevo_nivel.tope_enemigos = 0;
             nuevo_nivel.max_enemigos_nivel = config.orcos;
             nuevo_nivel.tope_defensores = 0;
 
@@ -649,7 +662,7 @@ int main(){
         }
 
 
-        for(int i = 0; i<nuevo_nivel.tope_enemigos; i++){
+        for(int i = 0; i<nuevo_nivel.max_enemigos_nivel; i++){
             nuevo_nivel.enemigos[i].vida= RES_ORCO + rand() %(RES_ORCO_RAND+1) ;
             nuevo_nivel.enemigos[i].camino = INVALIDO;
             nuevo_nivel.enemigos[i].pos_en_camino = INVALIDO;
@@ -734,7 +747,7 @@ int main(){
         while( i<config_nivel.enanos ){
 
             do{
-                aux = juego->nivel.camino_1[ rand()%juego->nivel.tope_camino_1 ];
+                aux = juego->nivel.camino_1[ rand()%(juego->nivel.tope_camino_1-2)+2 ];
                 posicion.fil = aux.fil-1+rand()%3;
                 posicion.col = aux.col-1+rand()%3;
             } while ( agregar_defensor( &(juego->nivel), posicion, ENANO) == INVALIDO );
@@ -745,7 +758,7 @@ int main(){
         i=0;
         while( i<config_nivel.elfos){
             do{
-                aux = juego->nivel.camino_2[ rand()%juego->nivel.tope_camino_2 ];
+                aux = juego->nivel.camino_2[ rand()%(juego->nivel.tope_camino_2-2) ];
                 posicion.fil = aux.fil-1+rand()%3;
                 posicion.col = aux.col-1+rand()%3;
             } while ( agregar_defensor( &(juego->nivel), posicion, ELFO) == INVALIDO );
