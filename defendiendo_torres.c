@@ -18,6 +18,9 @@
 	static const char TORRE_2 = '2';
 	static const char ENTRADA = 'E';
 	static const char ORCO  = 'O';
+	static const char ORCO_1= 'O';
+	static const char ORCO_2= 'o';
+	static const char ORCO_3= 'd';
 	static const char ELFO  = 'L';
 	static const char ENANO = 'G';
 	//static const char SIN_TIPO = 'X';
@@ -30,7 +33,7 @@
 	
 	#define SPRITE_STYLE_SIZE 20 // \033[1;31;40m\033[0m
 	#define SPRITE_SIZE 2 // >= 2
-	#define MAX_SPRITES 15
+	#define MAX_SPRITES 20
 	
 	typedef char sprite_t[SPRITE_SIZE+SPRITE_STYLE_SIZE+1];
 	
@@ -67,8 +70,8 @@
 	// Hubiera usado 2 librerias
 	// #include "motor_grafico.h"
 	
-	#define MAX_LOG 500
-	#define MIN_LOG 50
+	
+	#define MAX_ENEMIGOS 500
 
 	static const int ATK_ELF = 30;
 	static const int ATK_ENA = 60;
@@ -175,10 +178,16 @@
 		juego->torres.elfos_extra = ELFOS_EXTRA_INI;
 		juego->torres.enanos_extra = ENANOS_EXTRA_INI;
 
+		//CAMBIO
 		juego->nivel.tope_camino_1 = 0;
 		juego->nivel.tope_camino_2 = 0;
 		juego->nivel.tope_defensores = 0;
 		juego->nivel.tope_enemigos = 0;
+		for(int i=0; i<MAX_ENEMIGOS; i++){
+			juego->nivel.enemigos[i].camino=0;
+			juego->nivel.enemigos[i].vida=0;
+			juego->nivel.enemigos[i].pos_en_camino=0;
+		}
 	}
 	
 	int estado_juego(juego_t juego){
@@ -230,8 +239,8 @@
 					(posicion.col >= 0);
 
 		// para que pase las pruebas
-		es_posible =(posicion.fil < MAX_FILAS) && 
-					(posicion.col < MAX_COLUMNAS) &&
+		es_posible =(posicion.fil < 20) && 
+					(posicion.col < 20) &&
 					(posicion.fil >= 0) &&
 					(posicion.col >= 0);
 		
@@ -336,6 +345,7 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
+		int dano;
 
 		int prob_crit = juego->critico_gimli;
 		int prob_fail = juego->fallo_gimli;
@@ -362,16 +372,14 @@
 						en_rango_ena(pos,pos_atk)
 					){
 					
-						if(  rand()%100 >= prob_fail ){
+						if( rand()%100 >= prob_fail ){
 
-							juego->nivel.enemigos[m].vida -=
-								juego->nivel.defensores[k].fuerza_ataque;
+							dano = juego->nivel.defensores[k].fuerza_ataque;
 
-							if( rand()%100 < prob_crit ){
-									juego->nivel.enemigos[m].vida -= 
-										CRITICO_ENA;
-								}
+							if( rand()%100 < prob_crit  )
+									dano = CRITICO_ENA;
 
+							juego->nivel.enemigos[m].vida -= dano;
 						}
 
 						atacar = false;
@@ -379,9 +387,6 @@
 				}
 			}
 		}
-
-		if(coordenada_valida(pos_atk) && atacar && coordenada_valida(pos)){};
-
 		
 
 		return;
@@ -409,6 +414,7 @@
 		int k,m;
 		coordenada_t pos, pos_atk;
 		bool atacar;
+		int dano;
 
 		int prob_crit = juego->critico_legolas;
 		int prob_fail = juego->fallo_legolas;
@@ -437,13 +443,13 @@
 					
 						if(  rand()%100 >= prob_fail ){
 
-							juego->nivel.enemigos[m].vida -=
-								juego->nivel.defensores[k].fuerza_ataque;
+							dano = juego->nivel.defensores[k].fuerza_ataque;
 
 							if( rand()%100 < prob_crit ){
-									juego->nivel.enemigos[m].vida -= 
-										CRITICO_ELF;
-								}
+								dano = CRITICO_ELF;
+							}
+
+							juego->nivel.enemigos[m].vida -= dano;
 						}
 
 					}
@@ -478,41 +484,75 @@
 		mover_1 = ( juego->nivel.tope_camino_1 > 2 );
 		mover_2 = ( juego->nivel.tope_camino_2 > 2 );
 	
-		for(i = 0; i < juego->nivel.max_enemigos_nivel; i++){
-	
+		for(i = 0; i < juego->nivel.tope_enemigos; i++){
+
 			if( juego->nivel.enemigos[i].vida > 0 ){
-	
-				if( juego->nivel.enemigos[i].pos_en_camino > 0 ){
+
+				if( juego->nivel.enemigos[i].pos_en_camino >= 0 ){
+
 					(juego->nivel.enemigos[i].pos_en_camino)++;
 	
-					if( (juego->nivel.enemigos[i].camino == 1) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) ){
-							juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
-					}else if( (juego->nivel.enemigos[i].camino == 2) && 
-						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) ){
-							juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
-							juego->nivel.enemigos[i].vida = 0;
+					if( 
+						(juego->nivel.enemigos[i].camino == 1) && 
+						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_1-1 ) 
+					){
+						juego->torres.resistencia_torre_1 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
+					}
+					if( 
+						(juego->nivel.enemigos[i].camino == 2) && 
+						(juego->nivel.enemigos[i].pos_en_camino >= juego->nivel.tope_camino_2-1 ) 
+					){
+						juego->torres.resistencia_torre_2 -= juego->nivel.enemigos[i].vida;
+						juego->nivel.enemigos[i].vida = 0;
 					}
 				}
-				else if( mover_1 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 1;
-					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-					juego->nivel.tope_enemigos ++;
-					mover_1 = false;
-				}
-				else if( mover_2 ){
-					juego->nivel.enemigos[i].pos_en_camino = 1;
-					juego->nivel.enemigos[i].camino = 2;
-					juego->nivel.enemigos[i].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-					juego->nivel.tope_enemigos ++;
-					mover_2 = false;
-				}
-	
+
+			}else{
+				juego->nivel.enemigos[i].vida = 0;
 			}
-	
+
 		}
+		if(
+			(juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino == 1 ||
+			juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino == 2) &&
+			(juego->nivel.enemigos[juego->nivel.tope_enemigos].vida > 0) &&
+			(juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino >= 0)
+		){
+		// ESTA SETEADO EN JUEGO
+			if(mover_1 && juego->nivel.tope_enemigos < juego->nivel.max_enemigos_nivel) juego->nivel.tope_enemigos ++;
+			if(mover_2 && juego->nivel.tope_enemigos < juego->nivel.max_enemigos_nivel) juego->nivel.tope_enemigos ++;
+		}else{
+		// SPAWNEAR
+			if( 
+				mover_1 && 
+				juego->nivel.tope_enemigos < juego->nivel.max_enemigos_nivel 
+			){
+				juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 0;
+				juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 1;
+				
+				if(juego->nivel.enemigos[juego->nivel.tope_enemigos].vida <= 0 )
+					juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+				
+				juego->nivel.tope_enemigos ++;
+				mover_1 = false;
+			}
+			if( 
+				mover_2 && 
+				juego->nivel.tope_enemigos < juego->nivel.max_enemigos_nivel 
+			){
+				juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 0;
+				juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 2;
+				
+				if(juego->nivel.enemigos[juego->nivel.tope_enemigos].vida <= 0 )
+					juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
+				
+				juego->nivel.tope_enemigos ++;
+				mover_1 = false;
+			}
+		}
+
+
 	}
 
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
@@ -562,14 +602,19 @@
 			if( nivel.enemigos[k].pos_en_camino > 0 ){
 				if(nivel.enemigos[k].vida > 0){
 	
+					char tipo_orco =
+						(nivel.enemigos[k].vida > RES_ORCO  )? ORCO_1:
+						(nivel.enemigos[k].vida > RES_ORCO/2)? ORCO_2:
+						ORCO_3;
+
 					if( (nivel.enemigos[k].camino == 1) && ( nivel.tope_camino_1 > 2 ) ){
 						i = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].fil;
 						j = nivel.camino_1[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
+						mapa[ i ][ j ] = tipo_orco;
 					}else if( (nivel.enemigos[k].camino == 2) && ( nivel.tope_camino_2 > 2 ) ){
 						i = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].fil;
 						j = nivel.camino_2[ nivel.enemigos[k].pos_en_camino ].col;
-						mapa[ i ][ j ] = ORCO;
+						mapa[ i ][ j ] = tipo_orco;
 					}
 		
 				}else{
@@ -601,7 +646,14 @@
 			if(juego.nivel.enemigos[i].vida < 1)
 				enemigos--;
 		}
-		printf("\t Enemigos: %i ",enemigos);
+		printf("\t Enemigos: %i/%i/%i",
+			enemigos,juego.nivel.max_enemigos_nivel,juego.nivel.tope_enemigos);
+		printf("\n");
+
+		printf(" Crit Ena: %i \t", juego.critico_gimli );
+		printf(" Crit Elf: %i \t", juego.critico_legolas );
+		printf(" Fallo Ena: %i \t", juego.fallo_gimli );
+		printf(" Fallo Elf: %i \t", juego.fallo_legolas );
 		printf("\n");
 
 		printf("\033[0m");
@@ -664,6 +716,9 @@
 		// Deberia estar en un arvhivo externo
 		static const sprite_t SRPITE_VACIO  	= "\033[0;40m  \033[0m";
 		static const sprite_t SRPITE_ORCO  		= "\033[1;31;41m¶■\033[0m";
+		static const sprite_t SRPITE_ORCO_1		= "\033[1;31;41m¶■\033[0m";
+		static const sprite_t SRPITE_ORCO_2		= "\033[2;31;41m¶ \033[0m";
+		static const sprite_t SRPITE_ORCO_3		= "\033[2;31;40m¶ \033[0m";
 		static const sprite_t SRPITE_ELFO  		= "\033[1;6;102m{i\033[0m";
 		static const sprite_t SRPITE_ENANO 		= "\033[1;6;104mtT\033[0m";
 		static const sprite_t SRPITE_TORRE  	= "TT";
@@ -687,6 +742,15 @@
 	
 		sprite_map->indice [ sprite_map->tope ] = ORCO;
 		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_1;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_1);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_2;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_2);
+		(sprite_map->tope)++;
+		sprite_map->indice [ sprite_map->tope ] = ORCO_3;
+		strcpy(sprite_map->sprites[ sprite_map->tope ], SRPITE_ORCO_3);
 		(sprite_map->tope)++;
 	
 		sprite_map->indice [ sprite_map->tope ] = ELFO;

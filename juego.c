@@ -434,6 +434,7 @@ int main(){
         config_nivel_t config_nivel;
         juego->nivel_actual = 0;
         juego->nivel.tope_enemigos = 0;
+        juego->nivel = nuevo_nivel( juego->nivel_actual, config );
 
         while( estado_juego( *juego) == ESTADO_JUGANDO ){
 
@@ -469,6 +470,7 @@ int main(){
                 turno ++;
 
                 mostrar_juego( *juego );
+
                 detener_el_tiempo( config.velocidad );
 
             }
@@ -495,7 +497,7 @@ int main(){
             scanf("%c",&rta);
 
             if( toupper(rta) == toupper(CONFIRMAR) )
-                juego->nivel.tope_enemigos = 0;
+                juego->nivel.max_enemigos_nivel = 0;
          
         }
     }
