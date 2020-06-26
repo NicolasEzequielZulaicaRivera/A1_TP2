@@ -429,6 +429,7 @@
 					atacar = false;// return;
 			}
 		}
+
 	}
 
 	bool en_rango_enano( coordenada_t pos, coordenada_t enemigo ){
@@ -534,27 +535,7 @@
 			
 			juego->nivel.tope_enemigos ++;
 			mover_1 = false;
->>>>>>> hmm
 		}
-		if( mover_1 &&
-		juego->nivel.tope_enemigos <= juego->nivel.max_enemigos_nivel){
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 1;
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 1;
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-			juego->nivel.tope_enemigos ++;
-			mover_1 = false;
-		}
-		if( mover_2 &&
-		juego->nivel.tope_enemigos <= juego->nivel.max_enemigos_nivel){
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].pos_en_camino = 1;
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].camino = 2;
-			juego->nivel.enemigos[juego->nivel.tope_enemigos].vida = RES_ORCO + rand() %(RES_ORCO_RAND+1);
-			juego->nivel.tope_enemigos ++;
-			mover_2 = false;
-		}
-	
-		
-	
 	}
 
 	void cargar_mapa( char mapa[MAX_FILAS][MAX_COLUMNAS], nivel_t nivel){
@@ -632,7 +613,7 @@
 	}
 
 	bool coordenada_valida( coordenada_t coordenada ){
-
+		
 		return (coordenada.fil >= 0) && (coordenada.col >= 0) && (coordenada.fil < MAX_FILAS ) &&( coordenada.col < MAX_COLUMNAS);
 	}
 
@@ -719,7 +700,7 @@
 		printf("|==| ");
 		printf("\033[0m\n\n");
 	}
-
+	
 	void iniciar_sprites( mapa_sprites_t* mapa_sprites ){
 	
 		mapa_sprites->tope = 0;

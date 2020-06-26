@@ -967,3 +967,4 @@ int main(){
             animos(viento , humedad , animo_legolas , animo_gimli);
     }
 // JUEGO (¡)
+
