@@ -125,6 +125,9 @@
     #define MAX_MENSAJE 100
     #define MAX_OPCIONES 10
 
+    static const char OPCION_SI[MAX_MENSAJE]="SI";
+    static const char OPCION_NO[MAX_MENSAJE]="NO";
+
     // Funciones para pedir datos de distintos tipos
     void pedir_int( int* dato, int min, int max, char mensaje[MAX_MENSAJE] );
     void pedir_float( float* dato, float min, float max, char mensaje[MAX_MENSAJE] );
@@ -241,8 +244,12 @@
 
     // Generan los caminos del nivel segun sus caracteristicas y la coniguracion
     void generar_camino_1( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
+    void generar_extremos_camino_1( coordenada_t* entrada, coordenada_t* torre,
+        caracteristicas_nivel_t caracteristicas_nivel, bool cruzado );
     void generar_camino_2( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
-
+    void generar_extremos_camino_2( coordenada_t* entrada, coordenada_t* torre,
+        caracteristicas_nivel_t caracteristicas_nivel, bool cruzado );
+    
     // Genera un camino segun los parametros
     void generar_camino(coordenada_t camino[MAX_LONGITUD_CAMINO], 
         int* tope_camino, coordenada_t entrada, coordenada_t torre, 
@@ -410,8 +417,8 @@ int main(){
         int tope = 2;
         opciones[0]= CONFIRMAR;
         opciones[1]= CANCELAR;
-        strcpy(nombre_opciones[0],"SI");
-        strcpy(nombre_opciones[1],"NO");
+        strcpy(nombre_opciones[0],OPCION_SI);
+        strcpy(nombre_opciones[1],OPCION_NO);
 
         char respuesta;
         pedir_char(&respuesta,opciones,nombre_opciones,tope,mensaje);
@@ -753,30 +760,8 @@ int main(){
 
         if( caracteristicas_nivel.torre_1 ){
 
-            switch( caracteristicas_nivel.entrada ){
-
-                case ENTRADA_ESTE:
-                    entrada.fil = rand()%dimension;
-                    entrada.col = dimension-1;
-                    torre.fil = rand()%dimension;
-                    torre.col = 0;
-                break;
-
-                case ENTRADA_NORTE:
-                    entrada.fil = 0;
-                    entrada.col = rand()%(dimension/2)+(dimension/2)*(cruzado);
-                    torre.fil = dimension-1;
-                    torre.col = rand()%(dimension/2);
-                break;
-
-                case ENTRADA_SUR:
-                    entrada.fil = dimension-1;
-                    entrada.col = rand()%(dimension/2)+(dimension/2)*(cruzado);
-                    torre.fil = 0;
-                    torre.col = rand()%(dimension/2);
-                break;
-
-            }
+            generar_extremos_camino_1( &entrada, &torre,
+                caracteristicas_nivel, cruzado );
 
             generar_camino(nivel->camino_1, &(nivel->tope_camino_1),
                 entrada, torre, dimension, configuracion );
@@ -784,6 +769,35 @@ int main(){
         }else
             nivel->tope_camino_1 = 0;
     }
+    void generar_extremos_camino_1( coordenada_t* entrada, coordenada_t* torre,
+        caracteristicas_nivel_t caracteristicas_nivel, bool cruzado ){
+
+        int dimension = caracteristicas_nivel.dimension;
+        switch( caracteristicas_nivel.entrada ){
+
+            case ENTRADA_ESTE:
+                entrada->fil = rand()%dimension;
+                entrada->col = dimension-1;
+                torre->fil = rand()%dimension;
+                torre->col = 0;
+            break;
+
+            case ENTRADA_NORTE:
+                entrada->fil = 0;
+                entrada->col = rand()%(dimension/2)+(dimension/2)*(cruzado);
+                torre->fil = dimension-1;
+                torre->col = rand()%(dimension/2);
+            break;
+
+            case ENTRADA_SUR:
+                entrada->fil = dimension-1;
+                entrada->col = rand()%(dimension/2)+(dimension/2)*(cruzado);
+                torre->fil = 0;
+                torre->col = rand()%(dimension/2);
+            break;
+        }
+    }
+     
     void generar_camino_2( nivel_t* nivel, 
         caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado ){
          
@@ -794,37 +808,43 @@ int main(){
 
         if( caracteristicas_nivel.torre_2 ){
 
-            switch( caracteristicas_nivel.entrada ){
-
-                case ENTRADA_OESTE:
-                    entrada.fil = rand()%dimension;
-                    entrada.col = 0;
-                    torre.fil = rand()%dimension;
-                    torre.col = dimension-1;
-                break;
-
-                case ENTRADA_NORTE:
-                    entrada.fil = 0;
-                    entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
-                    torre.fil = dimension-1;
-                    torre.col = rand()%(dimension/2)+(dimension/2);
-
-                break;
-
-                case ENTRADA_SUR:
-                    entrada.fil = dimension-1;
-                    entrada.col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
-                    torre.fil = 0;
-                    torre.col = rand()%(dimension/2)+(dimension/2);
-                break;
-
-            }
+            generar_extremos_camino_2( &entrada, &torre,
+                caracteristicas_nivel, cruzado );
 
             generar_camino(nivel->camino_2, &(nivel->tope_camino_2),
                 entrada, torre, dimension, configuracion );
 
         }else
             nivel->tope_camino_2 = 0; 
+    }
+    void generar_extremos_camino_2( coordenada_t* entrada, coordenada_t* torre,
+        caracteristicas_nivel_t caracteristicas_nivel, bool cruzado ){
+
+        int dimension = caracteristicas_nivel.dimension;
+        switch( caracteristicas_nivel.entrada ){
+
+                case ENTRADA_OESTE:
+                    entrada->fil = rand()%dimension;
+                    entrada->col = 0;
+                    torre->fil = rand()%dimension;
+                    torre->col = dimension-1;
+                break;
+
+                case ENTRADA_NORTE:
+                    entrada->fil = 0;
+                    entrada->col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                    torre->fil = dimension-1;
+                    torre->col = rand()%(dimension/2)+(dimension/2);
+
+                break;
+
+                case ENTRADA_SUR:
+                    entrada->fil = dimension-1;
+                    entrada->col = rand()%(dimension/2)+(dimension/2)*(!cruzado);
+                    torre->fil = 0;
+                    torre->col = rand()%(dimension/2)+(dimension/2);
+                break;
+            }
     }
 
     void agregar_defensores( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  ){
