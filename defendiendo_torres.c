@@ -656,7 +656,7 @@
 	}
 
 	void mostrar_datos(juego_t juego){
-		printf("\033[0;40m");
+		printf("%s",ESTILO_MAPA);
 		printf("\n Nivel: %i ",juego.nivel_actual);
 		printf("\t Torre 1: %i ",juego.torres.resistencia_torre_1);
 		printf("\t Torre 2: %i ",juego.torres.resistencia_torre_2);
@@ -679,7 +679,7 @@
 		printf(" Elfos extra: %i \t", juego.torres.elfos_extra );
 		printf("\n");
 
-		printf("\033[0m");
+		printf("%s",FIN_ESTILO);
 	}
 //----- MOTOR DE JUEGO ----- (¡)
 
@@ -708,7 +708,7 @@
 			for( j = 0; j < dimension; j++ ){
 				buscar_sprite( mapa_sprites ,mapa[i][j], &sprite);
 				printf("%s",sprite);
-				printf("\033[2;40m|\033[0m");
+				printf("%s\033[2m|%s",ESTILO_MAPA,FIN_ESTILO);
 			}
 
 			mostrar_borde_vertical_mapa( i );

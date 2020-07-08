@@ -11,6 +11,7 @@
 //  CONSTANTES DE JUEGO (!)
     static const char ENANO = 'G';
     static const char ELFO = 'L';
+    static const char NADIE = 'N';
 
     static const int ESTADO_JUGANDO = 0;
     static const int ESTADO_GANADO  = 1;
@@ -25,10 +26,16 @@
     static const int RESISTENCIA_ORCO  = 200;
     static const int RESISTENCIA_ORCO_RAND  = 100;
 
-    static const int RESISTENICA_TORRE_INI = 600;
+    static const int RESISTENICA_TORRE_INICIAL = 600;
 
     static const int COSTO_ENANO_EXTRA = 50;
     static const int COSTO_ELFO_EXTRA = 50;
+
+    static const float FACTOR_ESPERA_NUEVO_NIVEL = 3;
+
+    static const int VIENTO_INICIAL = 50;
+    static const int HUMEDAD_INICIAL= 50;
+    static const char ANIMO_INICIAL = 'B';
 
     /*
      * Tipo de dato que almacena las caracteristicas que se utilizan 
@@ -119,10 +126,10 @@
     #define MAX_OPCIONES 10
 
     // Funciones para pedir datos de distintos tipos
-    void pedir_int( int* dato, int min, int max, char msg[MAX_MENSAJE] );
-    void pedir_float( float* dato, float min, float max, char msg[MAX_MENSAJE] );
-    void pedir_char( char* dato, char opciones [MAX_OPCIONES], char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE], int tope, char msg[MAX_MENSAJE] );
-    bool pedir_bool( char msg[MAX_MENSAJE] );
+    void pedir_int( int* dato, int min, int max, char mensaje[MAX_MENSAJE] );
+    void pedir_float( float* dato, float min, float max, char mensaje[MAX_MENSAJE] );
+    void pedir_char( char* dato, char opciones [MAX_OPCIONES], char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE], int tope, char mensaje[MAX_MENSAJE] );
+    bool pedir_bool( char mensaje[MAX_MENSAJE] );
     
     void tocar_para_continuar();
 // HEADER DE PEDIR DATOS (¡)
@@ -153,11 +160,21 @@
      *  de un juego
      */
     typedef struct configuracion {
-        float velocidad; // tiempo entre turnos 
-        int bonus_resistencia; // regeneracion de vida por nivel
+
+        // tiempo entre turnos 
+        float velocidad;
+
+        // regeneracion de vida por nivel
+        int bonus_resistencia;
+
+        // utilidades 
         bool saltear_niveles, invencible;
-        bool auto_defensores; // colocar defensores automaticamente
-        int complejidad, rareza_cruzado; // parametros para los caminos
+
+        // colocar defensores automaticamente
+        bool auto_defensores; 
+
+        // parametros para los caminos
+        int complejidad, rareza_cruzado; 
     } configuracion_t;
 
     const configuracion_t CONFIGURACION_STANDAR ={
@@ -176,8 +193,30 @@
         .complejidad = 1, .rareza_cruzado = 1
     };
 
+    const configuracion_t CONFIGURACION_MIN ={
+        .velocidad = 0.01f,
+        .bonus_resistencia = 0,
+        .saltear_niveles = false, .invencible = false,
+        .auto_defensores = false,
+        .complejidad = 1, .rareza_cruzado = 1
+    };
+
+    const configuracion_t CONFIGURACION_MAX ={
+        .velocidad = 1.0f,
+        .bonus_resistencia = 15000,
+        .saltear_niveles = true, .invencible = true,
+        .auto_defensores = true,
+        .complejidad = 5, .rareza_cruzado = 50
+    };
+
     // muestra opciones/configuracion
     void mostrar_opciones( juego_t* juego, configuracion_t* configuracion );
+
+    /*
+     * pre: es llamada solo dentro de mostrar_opciones
+     * post: muestra una interfaz para modificar la opcion seleccionada  
+     */
+    void modificar_opcion_seleccionada( configuracion_t* configuracion, int opcion );
 
     // Inicializa la configuracion son los valores std
     void iniciar_configuracion( configuracion_t* configuracion );   
@@ -200,6 +239,15 @@
      */
     nivel_t nuevo_nivel( int nivel, configuracion_t configuracion );
 
+    // Generan los caminos del nivel segun sus caracteristicas y la coniguracion
+    void generar_camino_1( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
+    void generar_camino_2( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
+
+    // Genera un camino segun los parametros
+    void generar_camino(coordenada_t camino[MAX_LONGITUD_CAMINO], 
+        int* tope_camino, coordenada_t entrada, coordenada_t torre, 
+        int dimension, configuracion_t configuracion );
+
     // Muestra un mensaje al pasar de nivel
     void mensaje_nuevo_nivel( int nivel );
 
@@ -212,31 +260,68 @@
     // Coloqua defensores segun las especificaciones del nivel
     void auto_agregar_defensores( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  );
 
+    // Pide al usuario que coloque un defensor segun las especificaciones del nivel
+    void pedir_un_defensor( juego_t* juego, 
+        caracteristicas_nivel_t caracteristicas_nivel, char tipo, int* k );
+    
     // Pide al usuario que coloque un defensor extra segun las especificaciones del nivel
     void agregar_defensores_bonus( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  );
+
+    // Subrutinas de agregar_defensores_bonus()
+    void obtener_tipo_defensor_bonus( juego_t juego, char* tipo,
+        caracteristicas_nivel_t caracteristicas_nivel );
+    void colocar_defensores_bonus( juego_t* juego, char tipo,
+        caracteristicas_nivel_t caracteristicas_nivel );
     
     // Coloca automaticamente un defensor extra segun las especificaciones del nivel
     void auto_agregar_defensores_bonus( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  );
+
+    // Subrutinas de auto_agregar_defensores_bonus()
+    void auto_obtener_tipo_defensor_bonus( juego_t* juego, char* tipo,
+        caracteristicas_nivel_t caracteristicas_nivel );
+    void auto_colocar_defensores_bonus( juego_t* juego, char tipo,
+        caracteristicas_nivel_t caracteristicas_nivel );
 
     // Devuelve las especificaciones del nivel pedido
     caracteristicas_nivel_t buscar_caracteristicas_nivel( int nivel );
 
     // Muestra las variables que dependen de los animos y pregunta si se quieren iniciar
     void iniciar_animos(int* viento , int* humedad , char* animo_legolas , char* animo_gimli);
- // HEADER JUEGO (¡)
+ 
+    // Aplica acciones extra al comenzar un nivel segun la configuracion
+    void bonus_nuevo_nivel( juego_t* juego , configuracion_t configuracion );
+
+    // pasa el juego de nivel, 
+    // aplicando los bonus correspoindientes a la configuracion
+    void pasar_de_nivel( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t* caracteristicas_nivel  );
+
+    // pasa el nivel de turno (se juega un turno), 
+    // aplicando los bonus correspoindientes a la configuracion
+    void pasar_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  );
+
+    // aplica al juego los bonus que corresponden previo a jugar un turno
+    void bonus_pre_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  );
+
+    // aplica al juego los bonus que corresponden posterior a jugar un turno
+    void bonus_post_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  );
+// HEADER JUEGO (¡)
 
 
 int main(){
-    srand( (unsigned int) time(NULL));  // ERROR: unsigned -> integer
+    srand( (unsigned int) time(NULL));
     //srand(105774); 
 
     configuracion_t configuracion;
     iniciar_configuracion( &configuracion );
 
-    int viento = 50;
-    int humedad = 50;
-    char animo_legolas = 'B';
-    char animo_gimli = 'B';
+    int viento = VIENTO_INICIAL;
+    int humedad = HUMEDAD_INICIAL;
+    char animo_legolas = ANIMO_INICIAL;
+    char animo_gimli = ANIMO_INICIAL;
 
     juego_t juego;
 
@@ -265,7 +350,6 @@ int main(){
             break;
 
         }
-
     }
 
 	return 0;
@@ -273,9 +357,9 @@ int main(){
 
 // PEDIR DATOS (!)
     
-    void pedir_int( int* dato, int min, int max, char msg[MAX_MENSAJE] ){
+    void pedir_int( int* dato, int min, int max, char mensaje[MAX_MENSAJE] ){
 
-        printf("%s\n",msg );
+        printf("%s\n",mensaje );
         printf("[%i - %i] > ",min,max );
 
         do{
@@ -285,9 +369,9 @@ int main(){
         return;    
     }
 
-    void pedir_float( float* dato, float min, float max, char msg[MAX_MENSAJE] ){
+    void pedir_float( float* dato, float min, float max, char mensaje[MAX_MENSAJE] ){
         
-        printf("%s\n",msg );
+        printf("%s\n",mensaje );
         printf("[%f - %f] > ",min,max );
 
         do{
@@ -297,10 +381,10 @@ int main(){
         return;
     }
 
-    void pedir_char( char* dato, char opciones [MAX_OPCIONES], char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE], int tope, char msg[MAX_MENSAJE] ){
+    void pedir_char( char* dato, char opciones [MAX_OPCIONES], char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE], int tope, char mensaje[MAX_MENSAJE] ){
 
         int i;
-        printf("%s\n",msg );
+        printf("%s\n",mensaje );
         for( i = 0 ; i < tope ; i++ )
             printf(" [%c : %s] ",opciones[i],nombre_opciones[i] );
 
@@ -319,7 +403,7 @@ int main(){
         return;
     }
 
-    bool pedir_bool( char msg[MAX_MENSAJE] ){
+    bool pedir_bool( char mensaje[MAX_MENSAJE] ){
 
         char opciones [MAX_OPCIONES]; 
         char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE];
@@ -329,10 +413,10 @@ int main(){
         strcpy(nombre_opciones[0],"SI");
         strcpy(nombre_opciones[1],"NO");
 
-        char dato;
-        pedir_char(&dato,opciones,nombre_opciones,tope,msg);
+        char respuesta;
+        pedir_char(&respuesta,opciones,nombre_opciones,tope,mensaje);
 
-        if( dato == CONFIRMAR )
+        if( respuesta == CONFIRMAR )
             return true;
 
         return false;
@@ -362,9 +446,9 @@ int main(){
         printf("%i: Opciones \n", OPCION_MOSTRAR_OPCIONES);
         printf("%i: Salir \n", OPCION_SALIR);
 
-        char input[20];
-        scanf("%s",input);
-        *opcion = input[0]-48;
+        char respuesta[20];
+        scanf("%s",respuesta);
+        *opcion = respuesta[0]-48;
     }
 
     void mostrar_opciones( juego_t* juego , configuracion_t* configuracion ){
@@ -389,50 +473,67 @@ int main(){
                     ( (configuracion->saltear_niveles)?CONFIRMAR:CANCELAR ) );
             printf("8: Volver \n");
 
-            char input[20];
-            scanf("%s",input);
-            opcion = input[0]-48;
+            char respuesta[MAX_MENSAJE];
+            scanf("%s",respuesta);
+            opcion = respuesta[0]-48;
 
-            char msg[MAX_MENSAJE];
-
-            switch( opcion ){
-                case 1:
-                    sprintf(msg," Ingrese la FRECUENCIA");
-                    pedir_float( &(configuracion->velocidad), 0.1f, 1.0f, msg );
-                break;
-
-                case 2:
-                    sprintf(msg," Ingrese el BONUS");
-                    pedir_int( &(configuracion->bonus_resistencia), 0, 9000, msg );
-                break;
-
-                case 3:
-                    sprintf(msg,"Ingrese la COMPLEJIDAD");
-                    pedir_int( &(configuracion->complejidad), 0, 5, msg );
-                break;
-
-                case 4:
-                    sprintf(msg,"Ingrese la RAREZA");
-                    pedir_int( &(configuracion->rareza_cruzado), 1, 50, msg );
-                break;
-
-                case 5:
-                    sprintf(msg,"Auto posicionar defensores");
-                    configuracion->auto_defensores = pedir_bool(msg);
-                break;
-
-                case 6:
-                    sprintf(msg,"Ser invencible");
-                    configuracion->invencible = pedir_bool(msg);
-                break;
-
-                case 7:
-                    sprintf(msg,"Saltear niveles");
-                    configuracion->saltear_niveles = pedir_bool(msg);
-                break;
-            }
+            modificar_opcion_seleccionada( configuracion, opcion );
         }
         return;
+    }
+
+    void modificar_opcion_seleccionada( configuracion_t* configuracion, int opcion ){
+        
+        char mensaje[MAX_MENSAJE];
+
+        switch( opcion ){
+            case 1:
+                sprintf(mensaje," Ingrese la FRECUENCIA");
+                pedir_float( &(configuracion->velocidad), 
+                    CONFIGURACION_MIN.velocidad, 
+                    CONFIGURACION_MAX.velocidad, 
+                    mensaje );
+            break;
+
+            case 2:
+                sprintf(mensaje," Ingrese el BONUS");
+                pedir_int( &(configuracion->bonus_resistencia), 
+                    CONFIGURACION_MIN.bonus_resistencia, 
+                    CONFIGURACION_MAX.bonus_resistencia, 
+                    mensaje );
+            break;
+
+            case 3:
+                sprintf(mensaje,"Ingrese la COMPLEJIDAD");
+                pedir_int( &(configuracion->complejidad), 
+                    CONFIGURACION_MIN.complejidad, 
+                    CONFIGURACION_MAX.complejidad, 
+                    mensaje );
+            break;
+
+            case 4:
+                sprintf(mensaje,"Ingrese la RAREZA");
+                pedir_int( &(configuracion->rareza_cruzado), 
+                    CONFIGURACION_MIN.rareza_cruzado, 
+                    CONFIGURACION_MAX.rareza_cruzado, 
+                    mensaje );
+            break;
+
+            case 5:
+                sprintf(mensaje,"Auto posicionar defensores");
+                configuracion->auto_defensores = pedir_bool(mensaje);
+            break;
+
+            case 6:
+                sprintf(mensaje,"Ser invencible");
+                configuracion->invencible = pedir_bool(mensaje);
+            break;
+
+            case 7:
+                sprintf(mensaje,"Saltear niveles");
+                configuracion->saltear_niveles = pedir_bool(mensaje);
+            break;
+        }   
     }
 
     void iniciar_configuracion( configuracion_t* configuracion ){
@@ -442,9 +543,6 @@ int main(){
 // MENU Y CONFIGURACION (!)
 
 // JUEGO (!)
-
-    // Aplica acciones extra al comenzar un nivel segun la configuracion
-    void bonus_nuevo_nivel( juego_t* juego , configuracion_t configuracion );
 
     void nuevo_juego( juego_t* juego , configuracion_t configuracion ){
 
@@ -457,61 +555,83 @@ int main(){
         while( estado_juego( *juego) == ESTADO_JUGANDO ){
 
             if( estado_nivel( juego->nivel ) == ESTADO_GANADO  ){
-                // NUEVO NIVEL
                 
-                juego->nivel_actual ++;
-                caracteristicas_nivel = buscar_caracteristicas_nivel( juego->nivel_actual );
                 turno = 0;
-                juego->nivel = nuevo_nivel( juego->nivel_actual, configuracion );
-                mensaje_nuevo_nivel( juego->nivel_actual );
-
-                bonus_nuevo_nivel( juego , configuracion );
-
-                if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.max_enemigos_nivel > 0) ){
-
-                    if( configuracion.auto_defensores )
-                        auto_agregar_defensores( juego, caracteristicas_nivel );
-                    else
-                        agregar_defensores( juego, caracteristicas_nivel );
-                }
-
-                mostrar_juego( *juego );
-                detener_el_tiempo( configuracion.velocidad*3 );
-
-            }else{
-                // JUGAR TURNO
-
+                pasar_de_nivel( juego , configuracion, &caracteristicas_nivel );
                 
-                if( (turno > 0) && 
-                    (turno <= (caracteristicas_nivel.orcos / 
-                        (caracteristicas_nivel.torre_1*1+caracteristicas_nivel.torre_2*1) )) &&
-                    (turno % caracteristicas_nivel.turnos_bonus == 0) 
-                ){
-
-                    if( (configuracion.auto_defensores) )
-                        auto_agregar_defensores_bonus( juego, caracteristicas_nivel );
-                    else
-                        agregar_defensores_bonus( juego, caracteristicas_nivel );
-                }
-
-                jugar_turno( juego );
+            }else{
+                
+                pasar_turno( juego , configuracion, 
+                    caracteristicas_nivel, turno  );
+                
                 turno ++;
 
                 mostrar_juego( *juego );
-
                 detener_el_tiempo( configuracion.velocidad );
-
-            }
-
-            if(configuracion.invencible){
-                juego->torres.resistencia_torre_1 = 
-                juego->torres.resistencia_torre_2 = 
-                RESISTENICA_TORRE_INI;
             }
         }
 
-        // GANO O PERDIO
         mensaje_terminar_juego( estado_juego( *juego) );
+    }
+
+    void pasar_de_nivel( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t* caracteristicas_nivel  ){
+
+        juego->nivel_actual ++;
+        *caracteristicas_nivel = buscar_caracteristicas_nivel( juego->nivel_actual );
+        juego->nivel = nuevo_nivel( juego->nivel_actual, configuracion );
+        mensaje_nuevo_nivel( juego->nivel_actual );
+
+        bonus_nuevo_nivel( juego , configuracion );
+
+        if( (juego->nivel_actual <= CANTIDAD_NIVELES) && (juego->nivel.max_enemigos_nivel > 0) ){
+
+                if( configuracion.auto_defensores )
+                auto_agregar_defensores( juego, *caracteristicas_nivel );
+            else
+                agregar_defensores( juego, *caracteristicas_nivel );
+        }
+
+        mostrar_juego( *juego );
+        detener_el_tiempo( configuracion.velocidad * FACTOR_ESPERA_NUEVO_NIVEL );
+    }
+
+    void pasar_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  ){
+
+        bonus_pre_turno( juego , configuracion, 
+            caracteristicas_nivel, turno  );
+
+        jugar_turno( juego );
+
+        bonus_post_turno( juego , configuracion, 
+            caracteristicas_nivel, turno  );
+    }
+
+    void bonus_pre_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  ){
+
+        if( (turno > 0) && 
+            (turno <= (caracteristicas_nivel.orcos / 
+                (caracteristicas_nivel.torre_1*1+caracteristicas_nivel.torre_2*1) )) &&
+            (turno % caracteristicas_nivel.turnos_bonus == 0) 
+        ){
+
+            if( (configuracion.auto_defensores) )
+                auto_agregar_defensores_bonus( juego, caracteristicas_nivel );
+            else
+                agregar_defensores_bonus( juego, caracteristicas_nivel );
+        }
+    }
+
+    void bonus_post_turno( juego_t* juego , configuracion_t configuracion, 
+        caracteristicas_nivel_t caracteristicas_nivel, int turno  ){
+
+        if(configuracion.invencible){
+            juego->torres.resistencia_torre_1 = 
+            juego->torres.resistencia_torre_2 = 
+            RESISTENICA_TORRE_INICIAL;
+        }
     }
 
     void bonus_nuevo_nivel( juego_t* juego , configuracion_t configuracion ){
@@ -520,11 +640,11 @@ int main(){
         juego->torres.resistencia_torre_2 += configuracion.bonus_resistencia;
 
         if( configuracion.saltear_niveles ){
-            char rta;
+            char respuesta;
             printf("\n SALTEAR NIVEL [%c]\n", CONFIRMAR );
-            scanf("%c",&rta);
+            scanf("%c",&respuesta);
 
-            if( toupper(rta) == toupper(CONFIRMAR) )
+            if( toupper(respuesta) == toupper(CONFIRMAR) )
                 juego->nivel.max_enemigos_nivel = 0;
          
         }
@@ -569,10 +689,6 @@ int main(){
         tocar_para_continuar();
     } 
 
-    // Generan los caminos del nivel segun sus caracteristicas y la coniguracion
-    void generar_camino_1( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
-    void generar_camino_2( nivel_t* nivel, caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado );
-
     nivel_t nuevo_nivel( int nivel , configuracion_t configuracion ){
 
         nivel_t nuevo_nivel;
@@ -614,11 +730,23 @@ int main(){
         return nuevo_nivel;
     }
 
+    void generar_camino(coordenada_t camino[MAX_LONGITUD_CAMINO], 
+        int* tope_camino, coordenada_t entrada, coordenada_t torre, 
+        int dimension, configuracion_t configuracion ){
+
+        int intentos = 0;
+        *tope_camino = 0;
+
+        while( (*tope_camino < configuracion.complejidad *dimension) 
+            && (intentos < MAX_INTENTOS) ){
+
+            obtener_camino( camino, tope_camino, entrada, torre);
+        }
+    }
     void generar_camino_1( nivel_t* nivel, 
         caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado ){
         
         int dimension = caracteristicas_nivel.dimension ;
-        int intentos = 0;
         coordenada_t entrada,torre;
         entrada.fil=entrada.col=0;
         torre.fil=torre.col=10;
@@ -650,18 +778,9 @@ int main(){
 
             }
 
-            intentos = 0;
-            nivel->tope_camino_1 = 0;
+            generar_camino(nivel->camino_1, &(nivel->tope_camino_1),
+                entrada, torre, dimension, configuracion );
 
-            while( (nivel->tope_camino_1 < configuracion.complejidad *dimension) 
-                && (intentos < MAX_INTENTOS) ){
-
-                obtener_camino(
-                    nivel->camino_1,
-                    &(nivel->tope_camino_1), 
-                    entrada, torre
-                );
-            }
         }else
             nivel->tope_camino_1 = 0;
     }
@@ -669,7 +788,6 @@ int main(){
         caracteristicas_nivel_t caracteristicas_nivel , configuracion_t configuracion, bool cruzado ){
          
         int dimension = caracteristicas_nivel.dimension ;
-        int intentos = 0;
         coordenada_t entrada,torre;
         entrada.fil=entrada.col=0;
         torre.fil=torre.col=10;
@@ -702,28 +820,13 @@ int main(){
 
             }
 
-            intentos = 0;
-            nivel->tope_camino_2 = 0;
-
-            while( (nivel->tope_camino_2 < configuracion.complejidad*dimension) 
-                && (intentos < MAX_INTENTOS) ){
-
-                obtener_camino(
-                    nivel->camino_2,
-                    &nivel->tope_camino_2, 
-                    entrada, torre
-                );
-            }
+            generar_camino(nivel->camino_2, &(nivel->tope_camino_2),
+                entrada, torre, dimension, configuracion );
 
         }else
             nivel->tope_camino_2 = 0; 
     }
 
-
-    // Pide al usuario que coloque un defensor segun las especificaciones del nivel
-    void pedir_un_defensor( juego_t* juego, 
-        caracteristicas_nivel_t caracteristicas_nivel, char tipo, int* k );
-    
     void agregar_defensores( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  ){
 
         int k;
@@ -744,7 +847,7 @@ int main(){
         caracteristicas_nivel_t caracteristicas_nivel, char tipo, int* k  ){
     
         int col, fil, i=*k;
-        char msg [MAX_MENSAJE], nombre[MAX_MENSAJE];
+        char mensaje [MAX_MENSAJE], nombre[MAX_MENSAJE];
         coordenada_t posicion;
         char estado;
     
@@ -759,10 +862,10 @@ int main(){
             printf("\n COLOCAR DEFENSORES \n");
             printf("\n Enanos: %i \t Elfos: %i \n",caracteristicas_nivel.enanos,caracteristicas_nivel.elfos);
 
-            sprintf(msg, "Ingrese la fila del %s %i",nombre,i+1);
-            pedir_int( &fil, 0, caracteristicas_nivel.dimension-1,msg);
-            sprintf(msg, "Ingrese la columna del %s %i",nombre,i+1);
-            pedir_int( &col, 0, caracteristicas_nivel.dimension-1,msg);
+            sprintf(mensaje, "Ingrese la fila del %s %i",nombre,i+1);
+            pedir_int( &fil, 0, caracteristicas_nivel.dimension-1,mensaje);
+            sprintf(mensaje, "Ingrese la columna del %s %i",nombre,i+1);
+            pedir_int( &col, 0, caracteristicas_nivel.dimension-1,mensaje);
 
             posicion.fil = fil;
             posicion.col = col;
@@ -812,79 +915,74 @@ int main(){
 
     void agregar_defensores_bonus( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  ){
 
-        int col, fil;
-        char msg [MAX_MENSAJE];
-        coordenada_t posicion;
-        char tipo, estado;
-        bool enanos,elfos;
+        char tipo;
 
+        obtener_tipo_defensor_bonus( *juego, &tipo, caracteristicas_nivel );
+
+        if( tipo != ELFO && tipo!=ENANO )
+            return;
+
+        colocar_defensores_bonus( juego, tipo, caracteristicas_nivel );
+    }
+
+    void obtener_tipo_defensor_bonus( juego_t juego, char* tipo,
+        caracteristicas_nivel_t caracteristicas_nivel ){
+
+        bool enanos,elfos;
         char opciones [MAX_OPCIONES];
         char nombre_opciones [MAX_OPCIONES][MAX_MENSAJE];
         int tope;
+        char mensaje [MAX_MENSAJE];
 
-        enanos = ( caracteristicas_nivel.torre_1 && 
-            juego->torres.enanos_extra > 0);
+        enanos = ( caracteristicas_nivel.torre_1 && juego.torres.enanos_extra > 0);
+        elfos = ( caracteristicas_nivel.torre_2 && juego.torres.elfos_extra > 0);
 
-        elfos = ( caracteristicas_nivel.torre_2 && 
-            juego->torres.elfos_extra > 0);
+        *tipo = NADIE;
+        if( !enanos && !elfos ) return;
 
-        if( !enanos && !elfos )
-            return;
-
-        mostrar_juego(*juego);
+        mostrar_juego(juego);
         printf("\n PUEDE COLOCAR UN DEFENSOR EXTRA \n");
         printf(" COSTO: ");
-        if(enanos)
-            printf(" Enanos: %i Hp de la torre 1 .",COSTO_ENANO_EXTRA);
-        if(elfos)
-            printf(" Elfo: %i Hp de la torre 2 .",COSTO_ELFO_EXTRA);
+        if(enanos) printf(" Enanos: %i Hp de la torre 1 .",COSTO_ENANO_EXTRA);
+        if(elfos) printf(" Elfo: %i Hp de la torre 2 .",COSTO_ELFO_EXTRA);
         printf("\n\n");
 
-        opciones[0] = CANCELAR;
-        strcpy(nombre_opciones[0], "CANCELAR");
-        if( enanos && elfos ){
-            opciones[1] = ENANO;
-            strcpy(nombre_opciones[1],"ENANO");
-            opciones[2] = ELFO;
-            strcpy(nombre_opciones[2], "ELFO");
-            tope = 3;
-        }else if( enanos ){
-            opciones[1] = ENANO;
-            strcpy(nombre_opciones[1], "ENANO");
-            tope = 2;
-        }else if( elfos ){
-            opciones[1] = ELFO;
-            strcpy(nombre_opciones[1], "ELFO");
-            tope = 2;
-        }else
-            return;
-
-        sprintf(msg," Que defensor desea colocar ?");
-        pedir_char( &tipo, opciones, nombre_opciones, tope, msg );      
-        mostrar_juego(*juego);
-
-        if( toupper(tipo) == toupper(ENANO) ){
-            tipo = ENANO;
-            juego->torres.resistencia_torre_1 -= COSTO_ENANO_EXTRA;
-            juego->torres.enanos_extra --;
+        tope=0;
+        opciones[tope] = CANCELAR;
+        strcpy(nombre_opciones[tope], "CANCELAR");
+        tope++;
+        if( enanos ){
+            opciones[tope] = ENANO;
+            strcpy(nombre_opciones[tope],"ENANO");
+            tope++;
         }
-        else if( toupper(tipo) == toupper(ELFO) ){
-            tipo = ELFO;
-            juego->torres.resistencia_torre_2 -= COSTO_ELFO_EXTRA;
-            juego->torres.elfos_extra --;
+        if( elfos ){
+            opciones[tope] = ELFO;
+            strcpy(nombre_opciones[tope],"ELFO");
+            tope++;
         }
-        else
-            return;
+
+        sprintf(mensaje," Que defensor desea colocar ?");
+        pedir_char( tipo, opciones, nombre_opciones, tope, mensaje );
+    }
+
+    void colocar_defensores_bonus( juego_t* juego, char tipo,
+        caracteristicas_nivel_t caracteristicas_nivel ){
+
+        int col, fil;
+        char estado;
+        char mensaje [MAX_MENSAJE];
+        coordenada_t posicion;
 
         do{
             do{
                 mostrar_juego(*juego);
                 printf("\n COLOCAR DEFENSOR \n");
                 
-                sprintf(msg, "Ingrese la fila del defensor ");
-                pedir_int( &fil, 0, caracteristicas_nivel.dimension-1,msg);
-                sprintf(msg, "Ingrese la columna del defensor");
-                pedir_int( &col, 0, caracteristicas_nivel.dimension-1,msg);
+                sprintf(mensaje, "Ingrese la fila del defensor ");
+                pedir_int( &fil, 0, caracteristicas_nivel.dimension-1,mensaje);
+                sprintf(mensaje, "Ingrese la columna del defensor");
+                pedir_int( &col, 0, caracteristicas_nivel.dimension-1,mensaje);
 
                 posicion.fil = fil;
                 posicion.col = col;
@@ -902,8 +1000,16 @@ int main(){
 
     void auto_agregar_defensores_bonus( juego_t* juego, caracteristicas_nivel_t caracteristicas_nivel  ){
 
-        coordenada_t posicion,aux;
         char tipo;
+        
+        auto_obtener_tipo_defensor_bonus( juego, &tipo, caracteristicas_nivel );
+        
+        auto_colocar_defensores_bonus( juego, tipo, caracteristicas_nivel );
+    }
+
+    void auto_obtener_tipo_defensor_bonus( juego_t* juego, char* tipo,
+        caracteristicas_nivel_t caracteristicas_nivel ){
+
         bool enanos,elfos;
 
         enanos = ( caracteristicas_nivel.torre_1 && 
@@ -915,24 +1021,29 @@ int main(){
 
         if( enanos && elfos ){
             if( rand()%2 ){
-                tipo = ENANO;
+                *tipo = ENANO;
                 juego->torres.enanos_extra --;
             }else{
-                tipo = ELFO;
+                *tipo = ELFO;
                 juego->torres.elfos_extra --;
             }
         }
         else if( enanos ){
-            tipo = ENANO;
+            *tipo = ENANO;
             juego->torres.enanos_extra --;
         }
         else if( elfos ){
-            tipo = ELFO;
+            *tipo = ELFO;
             juego->torres.elfos_extra --;
         }
         else
-            return;
+            *tipo = NADIE;
+    }
+    void auto_colocar_defensores_bonus( juego_t* juego, char tipo,
+        caracteristicas_nivel_t caracteristicas_nivel ){
 
+        coordenada_t posicion,aux;
+        
         if( tipo == ENANO ){
             do{
                 aux = juego->nivel.camino_1[ rand()%juego->nivel.tope_camino_1 ];
